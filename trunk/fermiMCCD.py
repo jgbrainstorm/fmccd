@@ -7,13 +7,27 @@ Jiangang Hao
 10/18/2009
 
 """
+
+
 import pylab as pl
 import numpy as np
 import pyfits as pf
 import glob as gl
 import os
 import sys
+import string
+import scipy.optimize as op
+from fermiMCCD_def import *
+import scipy.stats.kde as ke
+from scipy.stats import kstest
 
+#----gaussfit-----------------
+
+
+def kde(x=None,range=None):
+    x=x[(x>=range[0])*(x<=range[1])]
+    res=ke.gaussian_kde(x)
+    
 
 #-----Robust Mean--------------
 def robust_mean(x):
@@ -74,6 +88,9 @@ http://en.wikipedia.org/wiki/R-squared
 """
 
 def linefit(x,y):
+    """
+    a,b,SEa,SEb,chi2 = linefit(x)
+    """
     n=len(x)
     SSxx = n*np.var(x,dtype='double')
     SSyy = n*np.var(y,dtype='double')
@@ -127,6 +144,16 @@ def linfit(xx,yy,yyerr):
         chi2 = np.sum((y-(a + b*x))**2/yerr**2,dtype='double')/(n-2.)
         return a,b,SEa,SEb,chi2
 
+
+def mode_gauss(x,binsize=None,range=None,crit_f=None):
+    bins=(range[1]-range[0])/np.float(binsize)
+    hist,bin_edge=np.histogram(x,bins=bins,range=range)
+    ok=np.argwhere(hist >= crit_f)
+    xok=(x>bin_edge[ok.min()])*(x<=bin_edge[ok.max()+1])
+    mean=robust_mean(x[xok])
+    stdm=robust_std(x[xok])/np.sqrt(len(xok))
+    ks,p = kstest(x[xok],'norm')
+    return mean,stdm,ks,p
 
 #-----scale CCD image to int16-------
 """
@@ -186,12 +213,14 @@ def median_Img(dir=None,fileHEAD=None,medianName=None):
         imagName = gl.glob(dir+fileHEAD+'*.fits')
         
     medianHDU = pf.open(imagName[0])
+    medianHDU.verify('silentfix')
     NChannel = len(medianHDU)
     Nfile = len(imagName)
     totalIMG = np.zeros((Nfile,medianHDU[1].data.shape[0],medianHDU[1].data.shape[1]))
     for i in range(1,NChannel):     # i runs for channel
         for j in range(0,Nfile):    # j runs for file
-            imagHDU = pf.open(imagName[j])          
+            imagHDU = pf.open(imagName[j])
+            imagHDU.verify('silentfix')
             totalIMG[j,:,:] = imagHDU[i].data
         medianHDU[i].data = np.median(totalIMG,axis=0)
         print 'extension: ', i
@@ -292,6 +321,33 @@ def master_bias(dir=None,fileHEAD=None,medianName=None):
 
 
 
+
+#---------image reduction---------------------
+#--this function do the bias subtraction -----
+
+def image_reduction_oscan(dir=None,biasName=None):
+    if dir is None:
+        dir=os.getcwd()
+        dir=dir+'/'
+        imagName=gl.glob(dir+'*.fits')
+    else:
+        imagName = gl.glob(dir+'*.fits')
+    if biasName is None:
+	biasName=dir+'/bias/median.fits'
+    Nfile = len(imagName)
+    bias = pf.open(biasName)
+    for i in range(0,Nfile):
+        img=pf.open(imagName[i],mode='update')
+        img=subOscan(img)
+        NChannel=len(img)
+        print i
+        for j in range(1,NChannel):
+            img[j].data=img[j].data-bias[j].data
+        img=scaleHDU(img)
+        #img.writeto(imagName[i][:-5]+'_bias_sub.fits')
+        img.flush()
+
+
 #---------image reduction---------------------
 #--this function do the bias subtraction -----
 
@@ -317,125 +373,51 @@ def image_reduction(dir=None,biasName=None):
         #img.writeto(imagName[i][:-5]+'_bias_sub.fits')
         img.flush()
 
-"""
-
-#-----------------------------------------------------
-#Calculate the gain of ccd readouts of a given Channel.
-#-----------------------------------------------------
-
-def gain_channel(NameFits,NameBias,Channel,shift=None,plot=None,figdir=None):
-
-    ymin=150
-    ymax=350
-    xmin=500 
-    xmax=800
-    
-    left = np.mod(Channel,2)
-    
-
-    NFile = len(NameFits)
-    num = round((NFile-1)/2.)
-     
-    mean_b = np.zeros(num)
-    var_b = np.zeros(num)
-    
-    if shift == 1:
-        yshift = np.random.random_integers(0,500,1)
-        xshift = np.random.random_integers(0,3000,1)
-        xmin = xmin + xshift
-        xmax = xmax + xshift
-        ymin = ymin + yshift
-        ymax = ymax + yshift
-
-   # bias,biashdr = readCCDFits(NameBias,Channel)
-   # bias = bias[xmin:xmax,ymin:ymax]
-
-    for i in range(0,num):
-        print i
-        bias,biashdr = readCCDFits(NameBias[0],Channel)
-        bias = bias[xmin:xmax,ymin:ymax]
-        ba,hdra = readCCDFits(NameFits[i*2],Channel)
-        ba = ba[xmin:xmax,ymin:ymax]
-        ba = ba - bias
-        bb,hdrb = readCCDFits(NameFits[i*2+1],Channel)
-        bb = bb[xmin:xmax,ymin:ymax]
-        bb = bb - bias
-        uni = np.unique(ba)
-        add_b = ba + bb
-        diff_b= ba - bb
-        mean_b[i] = robust_mean(add_b)/2.
-        var_b[i] = robust_var(diff_b)/2.
-
-        if len(uni) < 10:
-            if np.max(ba) > 20000:
-               return 'Saturated'
-            else:
-               return 'N/A'
-        else:
-
-            ok = (mean_b > 0)*(mean_b <3500)
-
-    if len(mean_b[ok]) > 2:
-        (slope,intercept) = np.polyfit(mean_b[ok],var_b[ok],1)
-        gain = slope;
-    else:
-        return 'N/A'
-    gain=1
-    
-    if plot == 1:
-
-      #  figdir = '/data/MCCDTV_Testing_Results/Jun-8-2009/'
-        pl.plot(mean_b,var_b,'bo',mean_b,slope*mean_b+intercept,'-')
-        pl.xlabel('Mean Signal')
-        pl.ylabel('Variance')
-        pl.title('Photon Transfer Curve For Channel:'+str(Channel))
-        ax = pl.axes()
-        pl.text(0.1,.85,'Gain:'+str(gain)+'(e-/ADU)',transform = ax.transAxes)
-        pl.savefig(figdir+'gain_'+hdra[17]+str(left)+'.png')
-        pl.close()
-    return gain
-
-"""
 
 
 def linearity(NameFits,NameBias,Channel,shift=None,left=None):
 
     if left == None or left == 1:
-        ymin=150
-        ymax=350
-        xmin=200 #lower
-        xmax=500
+        colmin=150
+        colmax=350
+        rowmin=200 #lower
+        rowmax=500
         #xmin=2000 #middle
-        #xmax=2500
+        #xmax=2500    
+        #xmin=3600 #upper
+        #xmax=4000
     else:
-        ymin=1300
-        ymax=1750
-        xmin=200
-        xmax=500
-        #xmin=2000 #middle
-        #xmax=2500
-    #xmin=3600 #upper
-    #xmax=4000
+        colmin=1300
+        colmax=1750
+        rowmin=200
+        rowmax=500
+    #the following change is due to the bad part on the new CCD mounted 4/15/2010.
+    if Channel == 17:
+        rowmin=2000
+        rowmax=2500
+       
     if shift == 1:
-        yshift = np.random.random_integers(0,500,1)
-        xshift = np.random.random_integers(0,3000,1)
-        xmin = xmin + xshift
-        xmax = xmax + xshift
-        ymin = ymin + yshift
-        ymax = ymax + yshift
+        colshift = np.random.random_integers(0,500,1)
+        rowshift = np.random.random_integers(0,3000,1)
+        rowmin = rowmin + rowshift
+        rowmax = rowmax + rowshift
+        colmin = colmin + colshift
+        colmax = colmax + colshift
     NFile = len(NameFits)
     num = round((NFile-1)/2.)
     mean_b = np.zeros(num)
     var_b = np.zeros(num)
     exptime=np.zeros(num)
+    #exptime=np.append(np.arange(0,0.4,0.04),np.arange(0.02,0.46,0.04))
+    detector = pf.open(NameBias)[Channel].header['DETSER']
     for i in range(0,num):
-        bias,biashdr = readCCDFits(NameBias[0],Channel)
-        bias = bias[xmin:xmax,ymin:ymax]
+        bias,biashdr = readCCDFits(NameBias,Channel)
+        bias = bias[rowmin:rowmax,colmin:colmax]
         ba,hdra = readCCDFits(NameFits[i*2],Channel)
-        ba = ba[xmin:xmax,ymin:ymax]
+        ba = ba[rowmin:rowmax,colmin:colmax]
         ba = ba - bias
         bb,hdrb = readCCDFits(NameFits[i*2+1],Channel)
-        bb = bb[xmin:xmax,ymin:ymax]
+        bb = bb[rowmin:rowmax,colmin:colmax]
         bb = bb - bias
         uni = np.unique(ba)
         add_b = ba + bb
@@ -462,17 +444,36 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
     #pl.subplot(2,2,1)
     ax=fig.add_subplot(2,2,1)
     pl.plot(exptime,mean_b,'bo')
+    pl.hold(True)
+    pl.plot(exptime[0:5],exptime[0:5]*tb+ta,'r-')
     pl.xlabel('Exposure time (sec)')
     pl.ylabel('Bias subtracted mean counts (ADU)')
-    pl.title('Linearity plot for Channel: '+str(Channel))
+    if left == None:
+        pl.title('Position:' +detector+'     Channel: '+str(Channel))
+    if left == 1:
+        pl.title('Position:' +detector+'     Channel: '+str(Channel)+' left')
+    if left == 0:
+        pl.title('Position:' +detector+'     Channel: '+str(Channel)+' right')
     ax=fig.add_subplot(2,2,2)
-    pl.plot(exptime,(mean_b-(tb*exptime+ta))/(tb*exptime+ta),'bo')
+    dff=(mean_b-(tb*exptime+ta))/(tb*exptime+ta)
+    uuu=mean_b[abs(dff) <= 0.01]
+    if uuu.any() == True:
+        ffwid=mean_b==max(uuu)
+        ffw=mean_b[ffwid]
+    else:
+        ffw=999
+        ffwid=0
+    pl.plot(exptime,dff,'bo')
+    pl.plot(exptime[ffwid],dff[ffwid],'ro')
     pl.hold(True)
     pl.hlines(0.01,0,300,colors='r',linestyles='dashed')
     pl.hlines(-0.01,0,300,colors='r',linestyles='dashed')
-    pl.ylim(-0.1,0.1)
+    pl.ylim(-0.05,0.05)
+    pl.xlim(min(exptime),max(exptime))
     pl.xlabel('Exposure time (sec)')
     pl.ylabel('Relative deviation from the fitted line')    
+    pl.text(0.1,0.9,'Fullwell:'+str(round(ffw))+' (ADU)',transform = ax.transAxes)
+    pl.text(0.1,0.85,'Fullwell:'+str(round(ffw/gain))+' (e-)',transform = ax.transAxes) 
     ax=fig.add_subplot(2,2,3)
     pl.plot(mean_b,var_b,'bo')
     pl.xlim(0,60000)
@@ -503,7 +504,8 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
     pl.text(0.1,0.85,'Fullwell:'+str(round(fw/gain))+' (e-)',transform = ax.transAxes)
     pl.xlabel('Bias subtracted mean counts (ADU)')
     pl.ylabel('Relative deviation from the fitted line')    
-   
+
+
 
    
 #-----for single CCD readout data from the cube---
@@ -637,19 +639,19 @@ def gain_distribution(NameFits,NameBias,Channel,plot=None,figdir=None):
 # Calculate the readout noise on the overscan region
 #---------------------------------------------------
 
-def noise_channel(NameFits,Channel,plot=None,shift=None,figdir=None):
+def noise_channel(NameFits,Channel,plot=None,shift=None):
 
     left = np.mod(Channel,2)
     if left == 1:
         ncolmin=15
       	ncolmax=50
-      	nrowmin=1000
-      	nrowmax=2000
+      	nrowmin=500
+      	nrowmax=700
     else:   
         ncolmin=1025
       	ncolmax=1074
-      	nrowmin=1000
-      	nrowmax=2000
+      	nrowmin=500
+      	nrowmax=700
     if shift == 1:
         nxshift = np.random.random_integers(0,3000,1)
         nxmin = nxmin + nxshift
@@ -665,12 +667,13 @@ def noise_channel(NameFits,Channel,plot=None,shift=None,figdir=None):
         return 'N/A'
     elif plot == 1:
         pl.hist(nois,10,facecolor='green')
-        pl.xlabel('Subtracted Pixel Values in Overscan (ADU)')
+        pl.xlabel('Pixel Values in Overscan (ADU)')
         pl.title('Readout Noise for Channel:'+str(Channel))
         pl.legend(('Mean:'+str(robust_mean(nois)),'Sd:'+str(robust_std(nois))))
-        pl.savefig(figdir+'noise_'+hdrn[17]+str(left)+'.png')
+        pl.xlim(robust_mean(nois)-5*robust_std(nois), robust_mean(nois)+5*robust_std(nois))
+     #   pl.savefig(figdir+'noise_'+hdrn[17]+str(left)+'.png')
      #  pl.show()
-        pl.close()
+     #   pl.close()
         return robust_std(nois)
     else:
         return robust_std(nois)
@@ -885,3 +888,595 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
         pl.show()
     """
     return(b)
+
+#-------sextractor -------------------
+
+def sex(image, output, thresh=None, fwhm=None, gain=None, zmag=None,
+        sexdir='/Users/burns/CSP/template_subtraction/sex', scale=0.125, check_img=None, sigma_map=None,config=None):
+   '''Construct a sextractor command and run it.'''
+   if sexdir[-1] != '/':  sexdir += '/'
+   com = ["sex", image, "-c "+sexdir+config,
+          "-PARAMETERS_NAME "+sexdir+"default.param",
+          "-DETECT_MINAREA 5", "-DETECT_THRESH " + str(thresh),
+          "-ANALYSIS_THRESH " + str(thresh), "-PIXEL_SCALE %f" % (scale),
+          "-SEEING_FWHM "+str(fwhm), "-CATALOG_NAME "+output,
+          "-FILTER_NAME "+sexdir+"gauss_3.0_5x5.conv",
+          "-STARNNW_NAME "+sexdir+"default.nnw",
+          "-SATUR_LEVEL "+str(50000), "-VERBOSE_TYPE QUIET", "-CHECKIMAGE_NAME "+check_img]
+   if gain is not None:
+      com += ["-GAIN",str(gain)]
+   if zmag is not None:
+      com += ["-MAG_ZEROPOINT", str(zmag)]
+   if sigma_map is not None:
+      com += ["-WEIGHT_IMAGE",sigma_map,"-WEIGHT_TYPE MAP_WEIGHT"]
+   com = string.join(com)
+   #print com
+   res = os.system(com)
+   return res
+
+
+
+
+#-------extract extentions-----------
+def slice_fits(hdu=None,exten=None,output=None):
+    data=hdu[exten].data
+    header=hdu[exten].header
+    header.update('exten',exten,'extension of the image')
+    newhdu=pf.PrimaryHDU(data,header)
+    newhdu.writeto(output)
+    return 0
+
+
+
+def dist(x):
+    n=len(x)
+    d=np.zeros((n,n))
+    d[:,:]=-999.
+    for i in range(0,n-1):
+        for j in range(i+1,n):
+            d[i,j]=np.abs(x[i]-x[j])
+    d=d.flatten()
+    d=d[d>=0]
+    return(d)
+
+def extract_ext(filename,ext):
+    hdu=pf.open(filename)
+    output=filename[0:-5]+'_exten_'+str(ext)+'.fits'
+    t=slice_fits(hdu,ext,output)
+    hdu.close()
+
+def wcs2pix(ra,dec):
+    """
+    This only apply to MCCDTV with sispi mosaic image.
+    y ~ ra
+    x ~ dec
+    y,x = wcs2pix(ra,dec)
+    """
+    if type(ra).__name__=='float':
+        if ra > 180:
+            ra=ra-360
+        #y=ra*3600./0.27   #approximation
+        #x=dec*3600./0.27
+        x=3600*180./0.27/np.pi*np.sin(np.deg2rad(dec))
+        y=3600*180./0.27/np.pi*np.cos(np.deg2rad(dec))*np.sin(np.deg2rad(ra))
+    if type(ra).__name__=='ndarray':
+        dra=np.argwhere(ra>180)
+        if len(dra)>0:
+            ra[dra]=ra[dra]-360
+        #y=ra*3600./0.27   #approximation
+        #x=dec*3600./0.27
+        x=3600*180./0.27/np.pi*np.sin(np.deg2rad(dec)) #exact conversion
+        y=3600*180./0.27/np.pi*np.cos(np.deg2rad(dec))*np.sin(np.deg2rad(ra))
+    return y,x
+
+#-----------------ccd match------------
+
+
+def xy_matching(xa=None,ya=None,xb=None,yb=None,sep=None):
+    n=len(xa)
+    ind1=np.arange(n)
+    ind2=np.arange(n)
+    ind2[:]=-1
+    for i in range(0,n):
+        dd=np.sqrt((xb-xa[ind1[i]])**2+(yb-ya[ind1[i]])**2)
+        id=np.where(dd < sep)
+        if (len(id[0]) >= 1):
+            ind2[i]=id[0][0]
+    ok=np.where(ind2 != -1)
+    ind2=ind2[ok]
+    ind1=ind1[ok]    
+    return ind1,ind2
+
+def ccd_offset(CCD1,CCD2):
+    
+    if CCD1[0]=='s' or CCD1[0]=='S':
+        idx1=int(CCD1[1:])
+        x1_target = S[idx1][1]
+        y1_target = S[idx1][2]
+    else:
+        idx1=int(CCD1[1:])
+        x1_target = N[idx1][1]
+        y1_target = N[idx1][2]
+        
+    if CCD2[0]=='s' or CCD2[0]=='S':
+        idx2=int(CCD2[1:])
+        x2_target = S[idx2][1]
+        y2_target = S[idx2][2]
+    else:
+        idx2=int(CCD2[1:])
+        x2_target = N[idx2][1]
+        y2_target = N[idx2][2]
+
+    xoffset=x2_target - x1_target
+    yoffset=y2_target - y1_target
+    xoffset=xoffset*1000./15. #convert to pixel unit
+    yoffset=yoffset*1000./15.
+
+    return -xoffset,yoffset
+
+
+#--the coordinate should be in wcs converted to pixel coordinate-----
+
+def ccd_match(CCD1=None,xa=None,ya=None,CCD2=None,xb=None,yb=None,xadd=None,yadd=None,sep=None):
+    
+    """
+    ccd_match(CCD1=None,xa=None,ya=None,CCD2=None,xb=None,yb=None,sep=None)
+    """
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)
+    in1,in2=xy_matching(xa,ya,xb-xoffset-xadd,yb-yoffset-yadd,sep=sep)
+
+    return in1,in2
+
+
+
+
+
+def match_analysis(xa=None,ya=None,xb=None,yb=None,ina=None,inb=None):
+    xdff=xa[ina]-xb[inb]
+    ydff=ya[ina]-yb[inb]
+
+    fig=pl.figure(figsize=(9,8),dpi=100)
+    ax=fig.add_subplot(2,2,1)
+    pl.plot(xa,ya,'bo')
+    pl.plot(xa[ina],ya[ina],'r.')
+    pl.title('image 1: red dot is cross-matched')
+    ax=fig.add_subplot(2,2,2)
+    pl.plot(xb,yb,'bo')
+    pl.plot(xb[inb],yb[inb],'r.')
+    pl.title('image 2: red dot is cross-matched')
+    ax=fig.add_subplot(2,2,3)
+    xpeak=pl.hist(xdff,bins=80,range=(-0.5,0.5))
+    xpeak=max(xpeak[0])
+    pl.xlim(-0.3,0.3)
+    pl.ylim(0,1.5*xpeak)
+    pl.xlabel('x (dec) difference (pixels)')
+    pl.text(0.1,0.9,'difference: '+str(round(robust_mean(xdff),5))+'+/-'+str(round(robust_std(xdff),5)),transform = ax.transAxes)
+    ax=fig.add_subplot(2,2,4)
+    ypeak=pl.hist(ydff,bins=80,range=(-0.5,0.5))
+    ypeak=max(ypeak[0])
+    pl.xlim(-0.3,0.3)
+    pl.ylim(0,1.5*ypeak)
+    pl.xlabel('y (ra) difference (pixels)')
+    pl.text(0.1,0.9,'difference: '+str(round(robust_mean(ydff),5))+'+/-'+str(round(robust_std(ydff),5)),transform = ax.transAxes)   
+    return 0
+
+
+
+def ccd_match_analysis(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None):
+    dxa=dist(xa[ina])
+    dxb=dist(xb[inb])
+    dya=dist(ya[ina])
+    dyb=dist(yb[inb])
+    xtan=(dxb-dxa)/(dxb)
+    ytan=(dyb-dya)/(dyb)
+    fig=pl.figure(figsize=(14,14))
+    ax=fig.add_subplot(2,2,1)
+    pl.plot(xa,ya,'bo')
+    pl.plot(xa[ina],ya[ina],'r.')
+    pl.title(CCD1+': red dot is cross-matched')
+    ax=fig.add_subplot(2,2,2)
+    pl.plot(xb,yb,'bo')
+    pl.plot(xb[inb],yb[inb],'r.')
+    pl.title(CCD2+': red dot is cross-matched')
+    ax=fig.add_subplot(2,2,3)
+    xlarge=(dxa > 500)*(dxb>500)
+    ylarge=(dya>500)*(dyb> 500)
+    dxa=dxa[xlarge]
+    dxb=dxb[xlarge]
+    dya=dya[ylarge]
+    dyb=dyb[ylarge]
+    xtan=xtan[xlarge]
+    ytan=ytan[ylarge]
+    xcept,xslope,xcept_err,xslope_err,xchi2 = linefit(dxb,xtan)
+    ycept,yslope,ycept_err,yslope_err,ychi2 = linefit(dyb,ytan)
+    pl.plot(dxb,xtan,'bo')
+    pl.plot(np.array([min(dxb)-200,max(dxb)+200]),np.array([min(dxb)-200,max(dxb)+200])*xslope+xcept,'r-')
+    pl.text(0.1,0.9,'slope: '+str(round(xslope,5)),transform = ax.transAxes)
+    pl.text(0.1,0.85,'intercept: '+str(round(xcept,5)),transform = ax.transAxes)
+    pl.title('x(dec) direction')
+    pl.xlabel('separations on '+CCD2)
+    pl.ylabel('(dxb-dxa)/dxb')
+    ax=fig.add_subplot(2,2,4)
+    pl.plot(dyb,ytan,'bo')
+    pl.plot(np.array([min(dyb)-200,max(dyb)+200]),np.array([min(dyb)-200,max(dyb)+200])*yslope+ycept,'r-')
+    pl.text(0.1,0.9,'slope: '+str(round(yslope,5)),transform = ax.transAxes)
+    pl.text(0.1,0.85,'intercept: '+str(round(ycept,5)),transform = ax.transAxes)
+    pl.title('y(ra) direction')
+    pl.xlabel('separations on '+CCD2)
+    pl.ylabel('(dyb-dya)/dyb')
+
+
+
+def ccd_match_offset_bak(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None,xadd=None,yadd=None,crit_f=None):
+    if crit_f == None:
+        crit_f=0.
+    dxa=dist(xa[ina])
+    dxb=dist(xb[inb])
+    dya=dist(ya[ina])
+    dyb=dist(yb[inb])
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)    
+    xtan=(dxb-dxa)/(dxa)
+    ytan=(dyb-dya)/(dya)
+    fig=pl.figure(figsize=(8,5),dpi=100)
+    """
+    ax=fig.add_subplot(2,2,1)
+    pl.plot(xa,ya,'bo')
+    if len(inb) > 1:
+        pl.plot(xb[inb]-xoffset-xadd,yb[inb]-yoffset-yadd,'r.')
+    pl.xlim(min(xa)-200,max(xa)+200)
+    pl.ylim(min(ya)-200,max(ya)+200)
+    pl.xlabel('x (pixels)')
+    pl.xlabel('y (pixels)')
+    pl.title(CCD1+': red dot is cross-matched')
+    ax=fig.add_subplot(2,2,2)
+    pl.plot(xb-xoffset-xadd,yb-yoffset-yadd,'bo')
+    if len(ina) > 1:
+        pl.plot(xa[ina],ya[ina],'r.')
+    pl.xlim(min(xa)-200,max(xa)+200)
+    pl.ylim(min(ya)-200,max(ya)+200)
+    pl.xlabel('x (pixels)')
+    pl.xlabel('y (pixels)')
+    pl.title(CCD2+': red dot is cross-matched')
+    ax=fig.add_subplot(2,2,3)
+    """
+    ax=fig.add_subplot(1,2,1)
+    xlarge=(dxa > 300)*(dxb>300)
+    ylarge=(dya>300)*(dyb> 300)
+    dxa=dxa[xlarge]
+    dxb=dxb[xlarge]
+    dya=dya[ylarge]
+    dyb=dyb[ylarge]
+    xtan=xtan[xlarge]*200000/15.
+    ytan=ytan[ylarge]*200000/15.
+    xpeak=pl.hist(xtan,bins=1000)
+    xpeak=max(xpeak[0])
+    mean_xtan,stdm_xtan,ks_x,ks_p_x=mode_gauss(xtan,binsize=1,range=(-150,150),crit_f=crit_f)
+    pl.hlines(crit_f,-100,100,'r')
+    pl.vlines(mean_xtan,0,xpeak,'r')
+    pl.ylim(0,1.5*xpeak)
+    pl.text(0.1,0.9,'x(dec) direction',transform = ax.transAxes)
+    pl.text(0.1,0.85,'Mean: '+str(round(mean_xtan,8)),transform = ax.transAxes)
+    pl.text(0.1,0.78,'Std to mean: '+str(round(stdm_xtan,8)),transform = ax.transAxes)
+    #pl.text(0.1,0.78,'KS normality test p-value: '+str(round(ks_p_x,8)),transform = ax.transAxes)
+    pl.xlabel('offset of '+CCD2+' w.r.t. '+CCD1+'(pixels)')
+    pl.xlim(-100,100)
+    ax=fig.add_subplot(1,2,2)
+    ypeak=pl.hist(ytan,bins=1000)
+    ypeak=max(ypeak[0])
+    mean_ytan,stdm_ytan,ks_y,ks_p_y=mode_gauss(ytan,binsize=1,range=(-150,150),crit_f=crit_f)
+    pl.hlines(crit_f,-100,100,'r')
+    pl.vlines(mean_ytan,0,ypeak,'r')
+    pl.ylim(0,1.5*ypeak)
+    pl.text(0.1,0.9,'y(ra) direction',transform = ax.transAxes)
+    pl.text(0.1,0.85,'Mean: '+str(round(mean_ytan,8)),transform = ax.transAxes)
+    pl.text(0.1,0.78,'Std to mean: '+str(round(stdm_ytan,8)),transform = ax.transAxes)
+    #pl.text(0.1,0.78,'KS normality test p-value: '+str(round(ks_p_y,8)),transform = ax.transAxes)
+    pl.xlabel('offset of '+CCD2+' w.r.t. '+CCD1+' (pixels)')
+    pl.xlim(-100,100)
+    return mean_xtan,stdm_xtan,mean_ytan,stdm_ytan
+
+
+
+def ccd_match_offset(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None,xadd=None,yadd=None,crit_f=None):
+    if crit_f == None:
+        crit_f=0.
+    dxa=dist(xa[ina])
+    dxb=dist(xb[inb])
+    dya=dist(ya[ina])
+    dyb=dist(yb[inb])
+    dla=np.sqrt(dxa**2+dya**2)
+    dlb=np.sqrt(dxb**2+dyb**2)
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)    
+    ltan=(dlb-dla)/dla
+    fig=pl.figure(figsize=(11,11),dpi=100)
+    ax=fig.add_subplot(2,2,1)
+    pl.plot(xa,ya,'bo')
+    if len(inb) > 1:
+        pl.plot(xb[inb]-xoffset-xadd,yb[inb]-yoffset-yadd,'r.')
+    pl.xlim(min(xa)-200,max(xa)+200)
+    pl.ylim(min(ya)-200,max(ya)+200)
+    pl.xlabel('x (pixels)')
+    pl.xlabel('y (pixels)')
+    pl.title(CCD1+': red dot is cross-matched')
+    ax=fig.add_subplot(2,2,2)
+    pl.plot(xb-xoffset-xadd,yb-yoffset-yadd,'bo')
+    if len(ina) > 1:
+        pl.plot(xa[ina],ya[ina],'r.')
+    pl.xlim(min(xa)-200,max(xa)+200)
+    pl.ylim(min(ya)-200,max(ya)+200)
+    pl.xlabel('x (pixels)')
+    pl.xlabel('y (pixels)')
+    pl.title(CCD2+': red dot is cross-matched')
+    ax=fig.add_subplot(2,2,3)
+    large=(dla > 300)*(dlb > 300)
+    ltan=ltan[large]*200000/15.
+    lpeak=pl.hist(ltan,bins=1000)
+    lpeak=max(lpeak[0])
+    mean_ltan,stdm_ltan,ks_l,ks_p_l=mode_gauss(ltan,binsize=1,range=(-150,150),crit_f=crit_f)
+    pl.hlines(crit_f,-100,100,'r')
+    pl.vlines(mean_ltan,0,lpeak,'r')
+    pl.ylim(0,1.5*lpeak)
+    pl.text(0.1,0.85,'Mean: '+str(round(mean_ltan,8)),transform = ax.transAxes)
+    pl.text(0.1,0.78,'Std to mean: '+str(round(stdm_ltan,8)),transform = ax.transAxes)
+    pl.xlabel('offset of '+CCD2+' w.r.t. '+CCD1+'(pixels)')
+    pl.xlim(-100,100)
+    return mean_ltan,stdm_ltan
+
+
+
+def ccd_match_offset_for_tilt_bak(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None,xadd=None,yadd=None,crit_f=None,dd=None):
+    if crit_f == None:
+        crit_f=0.
+    dxa=dist(xa[ina])
+    dxb=dist(xb[inb])
+    dya=dist(ya[ina])
+    dyb=dist(yb[inb])
+    
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)    
+    xtan=(dxb-dxa)/(dxb)
+    ytan=(dyb-dya)/(dyb)
+    fig=pl.figure(figsize=(8,5),dpi=100)
+    """
+    ax=fig.add_subplot(2,2,1)
+    pl.plot(xa,ya,'bo')
+    if len(inb) > 1:
+        pl.plot(xb[inb]-xoffset-xadd,yb[inb]-yoffset-yadd,'r.')
+    pl.xlim(min(xa)-200,max(xa)+200)
+    pl.ylim(min(ya)-200,max(ya)+200)
+    pl.xlabel('x (pixels)')
+    pl.xlabel('y (pixels)')
+    pl.title(CCD1+': red dot is cross-matched')
+    ax=fig.add_subplot(2,2,2)
+    pl.plot(xb-xoffset-xadd,yb-yoffset-yadd,'bo')
+    if len(ina) > 1:
+        pl.plot(xa[ina],ya[ina],'r.')
+    pl.xlim(min(xa)-200,max(xa)+200)
+    pl.ylim(min(ya)-200,max(ya)+200)
+    pl.xlabel('x (pixels)')
+    pl.xlabel('y (pixels)')
+    pl.title(CCD2+': red dot is cross-matched')
+    ax=fig.add_subplot(2,2,3)
+    """
+    ax=fig.add_subplot(1,2,1)
+    xlarge=(dxa > 300)*(dxb>300)
+    ylarge=(dya>300)*(dyb> 300)
+    dxa=dxa[xlarge]
+    dxb=dxb[xlarge]
+    dya=dya[ylarge]
+    dyb=dyb[ylarge]
+    xtan=xtan[xlarge]*200000/15/dd
+    ytan=ytan[ylarge]*200000/15/dd
+    xpeak=pl.hist(xtan,bins=1000)
+    xpeak=max(xpeak[0])
+    mean_xtan,stdm_xtan,ks_x,ks_p_x=mode_gauss(xtan,binsize=0.0001,range=(-0.1,0.1),crit_f=crit_f)
+    pl.hlines(crit_f,-100,100,'r')
+    pl.vlines(mean_xtan,0,xpeak,'r')
+    pl.ylim(0,1.5*xpeak)
+    pl.text(0.1,0.9,'x(dec) direction',transform = ax.transAxes)
+    pl.text(0.1,0.85,'Mean: '+str(round(mean_xtan,8)),transform = ax.transAxes)
+    pl.text(0.1,0.78,'Std to mean: '+str(round(stdm_xtan,8)),transform = ax.transAxes)
+    pl.xlabel('Tangent of the tilt angle')
+    pl.xlim(-0.100,0.100)
+    ax=fig.add_subplot(1,2,2)
+    ypeak=pl.hist(ytan,bins=1000)
+    ypeak=max(ypeak[0])
+    mean_ytan,stdm_ytan,ks_y,ks_p_y=mode_gauss(ytan,binsize=0.00011,range=(-0.1,0.1),crit_f=crit_f)
+    pl.hlines(crit_f,-100,100,'r')
+    pl.vlines(mean_ytan,0,ypeak,'r')
+    pl.ylim(0,1.5*ypeak)
+    pl.text(0.1,0.9,'y(ra) direction',transform = ax.transAxes)
+    pl.text(0.1,0.85,'Mean: '+str(round(mean_ytan,8)),transform = ax.transAxes)
+    pl.text(0.1,0.78,'Std to mean: '+str(round(stdm_ytan,8)),transform = ax.transAxes)
+    pl.xlabel('Tangent of the tilt angle')
+    pl.xlim(-0.1,0.100)
+    return mean_xtan,stdm_xtan,mean_ytan,stdm_ytan
+
+
+
+def ccd_match_offset_for_tilt(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None,xadd=None,yadd=None,crit_f=None,dd=None):
+    if crit_f == None:
+        crit_f=0.
+    dxa=dist(xa[ina])
+    dxb=dist(xb[inb])
+    dya=dist(ya[ina])
+    dyb=dist(yb[inb])
+    dla=np.sqrt(dxa**2+dya**2)
+    dlb=np.sqrt(dxb**2+dyb**2)
+   
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)    
+    ltan=(dlb-dla)/dlb
+    fig=pl.figure(figsize=(8,8),dpi=100)
+    ax=fig.add_subplot(1,1,1)
+    large=(dla > 300)*(dlb > 300)
+    ltan=ltan[large]*200000/15./dd
+    lpeak=pl.hist(ltan,bins=1000)
+    lpeak=max(lpeak[0])
+    mean_ltan,stdm_ltan,ks_x,ks_p_x=mode_gauss(ltan,binsize=0.0001,range=(-0.1,0.1),crit_f=crit_f)
+    pl.hlines(crit_f,-100,100,'r')
+    pl.vlines(mean_ltan,0,lpeak,'r')
+    pl.ylim(0,1.5*lpeak)
+    pl.text(0.1,0.85,'Mean: '+str(round(mean_ltan,8)),transform = ax.transAxes)
+    pl.text(0.1,0.78,'Std to mean: '+str(round(stdm_ltan,8)),transform = ax.transAxes)
+    pl.xlabel('Tangent of the tilt angle')
+    pl.xlim(-0.100,0.100)
+   
+    return mean_ltan,stdm_ltan
+
+
+
+
+
+
+
+
+def ccd2file(CCD):
+    if CCD=='n4':
+        fileNo=7
+    if CCD=='n5':
+        fileNo=8
+    if CCD=='n6':
+        fileNo=9
+    if CCD=='n7':
+        fileNo=10
+    if CCD=='s4':
+        fileNo=11
+    if CCD=='s5':
+        fileNo=12
+    if CCD=='s6':
+        fileNo=13
+    if CCD=='s7':
+        fileNo=14
+    if CCD=='s10':
+        fileNo=15
+    if CCD=='s11':
+        fileNo=16
+    if CCD=='s12':
+        fileNo=17
+    if CCD=='s13':
+        fileNo=18
+    if CCD=='s16':
+        fileNo=19
+    if CCD=='s17':
+        fileNo=20
+    if CCD=='s18':
+        fileNo=21
+    if CCD=='s19':
+        fileNo=22
+    if CCD=='s21':
+        fileNo=23
+    if CCD=='s22':
+        fileNo=24
+    if CCD=='s23':
+        fileNo=25
+    if CCD=='s24':
+        fileNo=26
+    if CCD=='s26':
+        fileNo=27
+    if CCD=='s27':
+        fileNo=28
+    if CCD=='s28':
+        fileNo=29
+    if CCD=='s29':
+        fileNo=30
+    if CCD=='s30':
+        fileNo=31
+    if CCD=='s31':
+        fileNo=32
+    return fileNo
+
+
+
+def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None):
+    
+    b0=pf.getdata(cat[ccd2file(CCD1)])
+    b1=pf.getdata(cat[ccd2file(CCD2)])
+
+    f0=b0.field('FLUX_BEST')
+    f1=b1.field('FLUX_BEST')
+
+    ok0=f0>np.mean(f0)
+    ok1=f1>np.mean(f1)
+
+    ra0=b0.field('X_WORLD')[ok0]
+    dec0=b0.field('Y_WORLD')[ok0]
+    ra1=b1.field('X_WORLD')[ok1]
+    dec1=b1.field('Y_WORLD')[ok1]
+
+    y0,x0=wcs2pix(ra0,dec0)
+    y1,x1=wcs2pix(ra1,dec1)
+
+    in1,in2=ccd_match(CCD1=CCD1,xa=x0,ya=y0,CCD2=CCD2,xb=x1,yb=y1,xadd=xadd,yadd=yadd,sep=sep)
+    #mean_xtan,stdm_xtan,mean_ytan,stdm_ytan=ccd_match_offset(CCD1=CCD1,xa=x0,ya=y0,CCD2=CCD2,xb=x1,yb=y1,ina=in1,inb=in2,xadd=xadd,yadd=yadd,crit_f=crit_f)
+    #return mean_xtan,stdm_xtan,mean_ytan,stdm_ytan
+    mean_ltan,stdm_ltan=ccd_match_offset(CCD1=CCD1,xa=x0,ya=y0,CCD2=CCD2,xb=x1,yb=y1,ina=in1,inb=in2,xadd=xadd,yadd=yadd,crit_f=crit_f)
+    return mean_ltan,stdm_ltan
+
+
+
+
+
+
+
+
+
+
+
+def ccd_match_optimal(CCD1=None,xa=None,ya=None,CCD2=None,xb=None,yb=None,sep=None):
+    
+    """
+    ccd_match(CCD1=None,xa=None,ya=None,CCD2=None,xb=None,yb=None,sep=None)
+    """
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)
+    in1,in2=xy_matching(xa,ya,xb-xoffset,yb-yoffset,sep=sep)
+    nmatch=len(in1)
+    for i in range(3000):
+        print i
+        xoffset=xoffset+np.random.randint(-80,80)
+        yoffset=yoffset+np.random.randint(-80,80)
+        ind1,ind2=xy_matching(xa,ya,xb-xoffset,yb-yoffset,sep=sep)    
+        nm=len(ind1)
+        if nm > nmatch:
+            in1=ind1
+            in2=ind2
+            nmatch=nm
+    return in1,in2
+
+def ccd_tilt(CCD=None,cat=None,fileNoa=None,fileNob=None,xadd=None,yadd=None,sep=None,crit_f=None,dd=None):
+    filediff=abs(fileNob-fileNoa)
+    b0=pf.getdata(cat[fileNoa])
+    b1=pf.getdata(cat[fileNob])
+
+    xtan=np.zeros(0)
+    ytan=np.zeros(0)
+
+    f0=b0.field('FLUX_BEST')
+    f1=b1.field('FLUX_BEST')
+
+    ok0=f0>np.mean(f0)
+    ok1=f1>np.mean(f1)
+
+    ra0=b0.field('X_WORLD')[ok0]
+    dec0=b0.field('Y_WORLD')[ok0]
+    ra1=b1.field('X_WORLD')[ok1]
+    dec1=b1.field('Y_WORLD')[ok1]
+    
+    ya,xa=wcs2pix(ra0,dec0)
+    yb,xb=wcs2pix(ra1,dec1)
+    
+    ina,inb=ccd_match(CCD1=CCD,xa=xa,ya=ya,CCD2=CCD,xb=xb,yb=yb,xadd=xadd,yadd=yadd,sep=sep)
+    mean_ltan,stdm_ltan=ccd_match_offset_for_tilt(CCD1=CCD,xa=xa,ya=ya,CCD2=CCD,xb=xb,yb=yb,ina=ina,inb=inb,xadd=xadd,yadd=yadd,crit_f=crit_f,dd=dd)
+   
+    
+    #mean_xtan,stdm_xtan,mean_ytan,stdm_ytan=ccd_match_offset_for_tilt(CCD1=CCD,xa=xa,ya=ya,CCD2=CCD,xb=xb,yb=yb,ina=ina,inb=inb,xadd=xadd,yadd=yadd,crit_f=crit_f,dd=dd)
+    #return mean_xtan,stdm_xtan,mean_ytan,stdm_ytan
+
+
+  
+
+
+
+
+
+
+
+
