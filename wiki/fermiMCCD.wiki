@@ -1303,6 +1303,143 @@ def ccd_match_offset_for_tilt(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=No
     return mean_ltan,stdm_ltan
 
 
+def ccd2file(CCD):
+    if CCD=='n4':
+        fileNo=7
+    if CCD=='n5':
+        fileNo=8
+    if CCD=='n6':
+        fileNo=9
+    if CCD=='n7':
+        fileNo=10
+    if CCD=='s4':
+        fileNo=11
+    if CCD=='s5':
+        fileNo=12
+    if CCD=='s6':
+        fileNo=13
+    if CCD=='s7':
+        fileNo=14
+    if CCD=='s10':
+        fileNo=15
+    if CCD=='s11':
+        fileNo=16
+    if CCD=='s12':
+        fileNo=17
+    if CCD=='s13':
+        fileNo=18
+    if CCD=='s16':
+        fileNo=19
+    if CCD=='s17':
+        fileNo=20
+    if CCD=='s18':
+        fileNo=21
+    if CCD=='s19':
+        fileNo=22
+    if CCD=='s21':
+        fileNo=23
+    if CCD=='s22':
+        fileNo=24
+    if CCD=='s23':
+        fileNo=25
+    if CCD=='s24':
+        fileNo=26
+    if CCD=='s26':
+        fileNo=27
+    if CCD=='s27':
+        fileNo=28
+    if CCD=='s28':
+        fileNo=29
+    if CCD=='s29':
+        fileNo=30
+    if CCD=='s30':
+        fileNo=31
+    if CCD=='s31':
+        fileNo=32
+    return fileNo
 
+
+
+def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None):
+    
+    b0=pf.getdata(cat[ccd2file(CCD1)])
+    b1=pf.getdata(cat[ccd2file(CCD2)])
+
+    f0=b0.field('FLUX_BEST')
+    f1=b1.field('FLUX_BEST')
+
+    ok0=f0>np.mean(f0)
+    ok1=f1>np.mean(f1)
+
+    ra0=b0.field('X_WORLD')[ok0]
+    dec0=b0.field('Y_WORLD')[ok0]
+    ra1=b1.field('X_WORLD')[ok1]
+    dec1=b1.field('Y_WORLD')[ok1]
+
+    y0,x0=wcs2pix(ra0,dec0)
+    y1,x1=wcs2pix(ra1,dec1)
+
+    in1,in2=ccd_match(CCD1=CCD1,xa=x0,ya=y0,CCD2=CCD2,xb=x1,yb=y1,xadd=xadd,yadd=yadd,sep=sep)
+    #mean_xtan,stdm_xtan,mean_ytan,stdm_ytan=ccd_match_offset(CCD1=CCD1,xa=x0,ya=y0,CCD2=CCD2,xb=x1,yb=y1,ina=in1,inb=in2,xadd=xadd,yadd=yadd,crit_f=crit_f)
+    #return mean_xtan,stdm_xtan,mean_ytan,stdm_ytan
+    mean_ltan,stdm_ltan=ccd_match_offset(CCD1=CCD1,xa=x0,ya=y0,CCD2=CCD2,xb=x1,yb=y1,ina=in1,inb=in2,xadd=xadd,yadd=yadd,crit_f=crit_f)
+    return mean_ltan,stdm_ltan
+
+
+
+
+
+
+
+
+
+
+
+def ccd_match_optimal(CCD1=None,xa=None,ya=None,CCD2=None,xb=None,yb=None,sep=None):
+    
+    """
+    ccd_match(CCD1=None,xa=None,ya=None,CCD2=None,xb=None,yb=None,sep=None)
+    """
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)
+    in1,in2=xy_matching(xa,ya,xb-xoffset,yb-yoffset,sep=sep)
+    nmatch=len(in1)
+    for i in range(3000):
+        print i
+        xoffset=xoffset+np.random.randint(-80,80)
+        yoffset=yoffset+np.random.randint(-80,80)
+        ind1,ind2=xy_matching(xa,ya,xb-xoffset,yb-yoffset,sep=sep)    
+        nm=len(ind1)
+        if nm > nmatch:
+            in1=ind1
+            in2=ind2
+            nmatch=nm
+    return in1,in2
+
+def ccd_tilt(CCD=None,cat=None,fileNoa=None,fileNob=None,xadd=None,yadd=None,sep=None,crit_f=None,dd=None):
+    filediff=abs(fileNob-fileNoa)
+    b0=pf.getdata(cat[fileNoa])
+    b1=pf.getdata(cat[fileNob])
+
+    xtan=np.zeros(0)
+    ytan=np.zeros(0)
+
+    f0=b0.field('FLUX_BEST')
+    f1=b1.field('FLUX_BEST')
+
+    ok0=f0>np.mean(f0)
+    ok1=f1>np.mean(f1)
+
+    ra0=b0.field('X_WORLD')[ok0]
+    dec0=b0.field('Y_WORLD')[ok0]
+    ra1=b1.field('X_WORLD')[ok1]
+    dec1=b1.field('Y_WORLD')[ok1]
+    
+    ya,xa=wcs2pix(ra0,dec0)
+    yb,xb=wcs2pix(ra1,dec1)
+    
+    ina,inb=ccd_match(CCD1=CCD,xa=xa,ya=ya,CCD2=CCD,xb=xb,yb=yb,xadd=xadd,yadd=yadd,sep=sep)
+    mean_ltan,stdm_ltan=ccd_match_offset_for_tilt(CCD1=CCD,xa=xa,ya=ya,CCD2=CCD,xb=xb,yb=yb,ina=ina,inb=inb,xadd=xadd,yadd=yadd,crit_f=crit_f,dd=dd)
+   
+    
 
 }}}
