@@ -1,4 +1,4 @@
-#summary Python codes for crosstalk measurements and analysis.
+#summary Python codes/scripts for crosstalk measurements and analysis.
 
 = Introduction =
 
