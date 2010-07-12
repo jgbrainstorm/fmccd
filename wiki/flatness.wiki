@@ -1,4 +1,4 @@
-#summary Python codes/scripts for flatness measurement using the method shown in Hao et al, SPIE proc. 3375-137, 2010.
+#summary Python codes/scripts for flatness measurement using the method shown in Hao et al, SPIE proc. 7735-137, 2010.
 
 = Introduction =
 
