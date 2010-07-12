@@ -1,4 +1,4 @@
-#summary definition of those basic functions to be used.
+#summary Definitions of those basic functions to be used.
  
 === Documentation of fermiMCCD.py ===
 
