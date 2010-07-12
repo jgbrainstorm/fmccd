@@ -1,3 +1,5 @@
+# definition of those basic functions to be used.
+ 
 === Documentation of fermiMCCD.py ===
 
 {{{
