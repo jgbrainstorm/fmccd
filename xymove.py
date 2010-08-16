@@ -100,7 +100,7 @@ def moveto(CCD,xoffset=None,yoffset=None):
         x_target = N[idx][2]+xoffset
         y_target = N[idx][1]+yoffset
         
-    os.system('sendsockcmd -h 131.225.180.14 -p 2055 -t 50000 "ma,'+str(x_target)+','+str(y_target)+'"')
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 50000 "ma,'+str(x_target)+','+str(y_target)+'"')
     return(x_target,y_target)    
    
 #------move to left channel-----
@@ -116,7 +116,7 @@ def moveto_l(CCD,xoffset=None,yoffset=None):
     else:
         y_target = y_target + 9.0
 
-    os.system('sendsockcmd -h 131.225.180.14 -p 2055 -t 50000 "ma,'+str(x_target)+','+str(y_target)+'"')
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 50000 "ma,'+str(x_target)+','+str(y_target)+'"')
     return(x_target,y_target)    
 
   
@@ -134,12 +134,17 @@ def moveto_r(CCD,xoffset=None,yoffset=None):
     else:
         y_target = y_target - 9.0
 
-    os.system('sendsockcmd -h 131.225.180.14 -p 2055 -t 50000 "ma,'+str(x_target)+','+str(y_target)+'"')
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 50000 "ma,'+str(x_target)+','+str(y_target)+'"')
    
     return(x_target,y_target)      
 
 #-------move to right channel----
 
 def moveto_origin():
-    os.system('sendsockcmd -h 131.225.180.14 -p 2055 -t 50000 "ma,0,0"')
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 50000 "ma,0,0"')
     return("moved to origin")
+
+
+def moveto_xy(x,y):
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 50000 "ma,'+str(x)+','+str(y)+'"')
+    return("moved to the position you specified")
