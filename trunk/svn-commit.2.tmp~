@@ -1,0 +1,12 @@
+
+--This line, and those below, will be ignored--
+
+A    tracking_noise.py
+AM   dark.py
+A    svn-commit.2.tmp~
+A    svn-commit.tmp~
+AM   noise_sispi.py
+A    svn-commit.tmp
+AM   xtalk_viewer.py
+M    xymove.py
+AM   linearity_sispi.py

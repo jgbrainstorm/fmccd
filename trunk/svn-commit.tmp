@@ -1,0 +1,7 @@
+initial check in
+--This line, and those below, will be ignored--
+
+A    fermiMCCD.py
+AM   xtalk_auto.py
+AM   sub_img
+A    xymove.py
