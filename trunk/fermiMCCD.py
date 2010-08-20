@@ -16,10 +16,10 @@ import glob as gl
 import os
 import sys
 import string
-import scipy.optimize as op
+#import scipy.optimize as op
 from fermiMCCD_def import *
-import scipy.stats.kde as ke
-from scipy.stats import kstest
+#import scipy.stats.kde as ke
+#from scipy.stats import kstest
 
 #----gaussfit-----------------
 
@@ -203,25 +203,21 @@ Call: median
 Output: a median image file is created in the directory you specified.
 Return: the median HDU
 """
-
 def median_Img(dir=None,fileHEAD=None,medianName=None):
     if dir is None:
         dir=os.getcwd()
         dir=dir+'/'
         imagName=gl.glob(dir+'*.fits')
     else:
-        imagName = gl.glob(dir+fileHEAD+'*.fits')
-        
+        imagName = gl.glob(dir+fileHEAD+'*.fits')       
     medianHDU = pf.open(imagName[0])
     medianHDU.verify('silentfix')
     NChannel = len(medianHDU)
-    Nfile = len(imagName)
-    totalIMG = np.zeros((Nfile,medianHDU[1].data.shape[0],medianHDU[1].data.shape[1]))
+    Nfile =len(imagName)
+    totalIMG = np.zeros((Nfile,medianHDU[1].data.shape[0],medianHDU[1].data.shape[1]),dtype=int)
     for i in range(1,NChannel):     # i runs for channel
         for j in range(0,Nfile):    # j runs for file
-            imagHDU = pf.open(imagName[j])
-            imagHDU.verify('silentfix')
-            totalIMG[j,:,:] = imagHDU[i].data
+            totalIMG[j,:,:] =pf.getdata(imagName[j],i)
         medianHDU[i].data = np.median(totalIMG,axis=0)
         print 'extension: ', i
     HDU = scaleHDU(medianHDU)
@@ -230,6 +226,7 @@ def median_Img(dir=None,fileHEAD=None,medianName=None):
     else:
         HDU.writeto(dir+'median.fits')
     return(HDU)
+
 
 
 #-------read ccd images----------------------
@@ -253,16 +250,26 @@ def Img_subtraction(imageHDU=None,biasHDU=None,subName=None):
     
     return(HDU)
 
-def Img_sub(imageName,biasName):
-    imageHDU=pf.open(imageName,mode='update')
-    biasHDU=pf.open(biasName)
-    NChannel = len(imageHDU)
-    for i in range(1,NChannel):
-        imageHDU[i].data = imageHDU[i].data - biasHDU[i].data
-   # HDU = scaleHDU(medianHDU) """ scale the image"""
-    imageHDU=scaleHDU(imageHDU)
-    imageHDU.flush()    
-    return(0)
+
+def Img_sub(imageName=None,biasName=None,subName=None):
+    if subName:
+        imageHDU=pf.open(imageName)
+        imageHDU.verify('silentfix')
+        NChannel=len(imageHDU)
+        for i in range(1,NChannel):
+            imageHDU[i].data=pf.getdata(imageName,i)-pf.getdata(biasName,i)
+        imageHDU=scaleHDU(imageHDU)
+        imageHDU.writeto(subName)
+    else:
+        imageHDU=pf.open(imageName,mode='update')
+        NChannel = len(imageHDU)
+        for i in range(1,NChannel):
+            imageHDU[i].data=pf.getdata(imageName,i)-pf.getdata(biasName,i)
+        imageHDU=scaleHDU(imageHDU)
+        imageHDU.flush()    
+        return(0)
+
+
 
 
 
