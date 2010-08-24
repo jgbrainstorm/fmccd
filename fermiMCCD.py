@@ -19,7 +19,7 @@ import string
 #import scipy.optimize as op
 from fermiMCCD_def import *
 #import scipy.stats.kde as ke
-#from scipy.stats import kstest
+from scipy.stats import kstest
 
 #----gaussfit-----------------
 
@@ -59,6 +59,21 @@ def robust_std(x):
     yy=y[ok]
     return yy.std(dtype='double')
 
+#-------weighted mean, std--------
+def wmean(x,xerr):
+    w=1./(xerr**2)
+    wm=sum(x*w)/sum(w)
+    return(wm)
+
+
+def wsd(x,xerr):
+    w=1./(xerr**2)
+    ws=np.sqrt(1./sum(w))
+    return(ws)
+
+
+
+
 #-------Robust variance---
 
 def robust_var(x):
@@ -73,6 +88,34 @@ def robust_var(x):
     ok = (y>lowFense)*(y<highFense)
     yy=y[ok]
     return yy.var(dtype='double')
+
+
+#--------some binned plots-----
+def histhao(x,bsize=None):
+    nbin=(np.max(x)-np.min(x))/bsize
+    d=np.histogram(x,bins=nbin)
+    return d
+
+
+def bin_scatter(x,y,yerr=None,binsize=None):
+    h=histhao(x,binsize) 
+    nbin=len(h[0])
+    xm=np.zeros(nbin)
+    ym=np.zeros(nbin)
+    sdym=np.zeros(nbin)
+    for i in range(0,len(h[0])):
+        ind=(x>=h[1][i])*(x<h[1][i+1])
+        tt=x[ind]
+        if len(tt) > 0:
+            xm[i]=np.mean(x[ind])
+            if yerr:
+                ym[i]=wmean(y[ind],yerr[ind])
+                sdym[i]=wsd(y[ind],yerr[ind])
+            else:
+                ym[i]=np.mean(y[ind])
+                sdym[i]=np.std(y[ind])/np.sqrt(len(y[ind]))     
+    pl.errorbar(xm,ym,yerr=sdym,fmt='ro')
+
 
 
 
@@ -143,6 +186,33 @@ def linfit(xx,yy,yyerr):
         SEb = np.sqrt(S/delta)
         chi2 = np.sum((y-(a + b*x))**2/yerr**2,dtype='double')/(n-2.)
         return a,b,SEa,SEb,chi2
+
+        
+
+def binner(x=None,y=None,yerr=None,binsize=None):
+    h=histhao(x,binsize) 
+    nbin=len(h[0])
+    xm=np.zeros(nbin)
+    ym=np.zeros(nbin)
+    sdym=np.zeros(nbin)
+    for i in range(0,len(h[0])):
+        ind=(x>=h[1][i])*(x<h[1][i+1])
+        tt=x[ind]
+        if len(tt) > 0:
+            xm[i]=np.median(x[ind])
+            if yerr:
+                ym[i]=wmean(y[ind],yerr[ind])
+                sdym[i]=wsd(y[ind],yerr[ind])
+            else:
+                ym[i]=np.mean(y[ind])
+                sdym[i]=np.std(y[ind])/np.sqrt(len(y[ind]))
+    return xm,ym,sdym
+
+
+def binlinfit(x,y,bsize):
+    xx,yy,yyerr = binner(x,y,binsize=bsize)
+    (a,b,SEa,SEb,chi2)=linfit(xx,yy,yyerr)
+    return a,b,SEa,SEb,chi2
 
 
 def mode_gauss(x,binsize=None,range=None,crit_f=None):
@@ -823,21 +893,18 @@ def dark_current(imgHDU=None,biasHDU=None,Channel=None,pngName=None):
 
 
 
-#-----move the xy stage
-
-
 #---auto xtalk coef---------
 def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=None):
-      
-    colmin = winSg[0]
-    colmax = winSg[1]
-    rowmin = winSg[2]
-    rowmax = winSg[3]
-   
-    colminBg = winBg[0]    # for background substraction
-    colmaxBg = winBg[1]
-    rowminBg = winBg[2]
-    rowmaxBg = winBg[3]
+
+    rowmin = winSg[0]
+    rowmax = winSg[1]
+    colmin = winSg[2]
+    colmax = winSg[3]
+
+    rowminBg = winBg[0]
+    rowmaxBg = winBg[1]   
+    colminBg = winBg[2]    # for background substraction
+    colmaxBg = winBg[3]
     
     lefts = np.mod(source.ext,2)
     leftv = np.mod(victim.ext,2)
@@ -864,10 +931,9 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
     idd = (ss > 10000)*(ss < 65000)
     ss=ss[idd]
     vv=vv[idd]
+    #(a,b,SEa,SEb,chi2)=binlinfit(ss,vv,2000)
     vverr = np.sqrt(np.abs(vv))
-
     (a,b,SEa,SEb,chi2) = linfit(ss,vv,vverr)
-    """
     pl.figure(figsize=(15, 10))
     pl.subplot(2,2,1)
 
@@ -880,7 +946,9 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
     pl.subplot(2,2,3)
     pl.hold(True)
     pl.plot(sso,vvo,'b.')
+    #bin_scatter(ss,vv,binsize=2000)
     pl.plot(np.array([10000,65000]),np.array([10000,65000])*b+a,'r-')
+    pl.vlines(10000,-100,100,color='green',linestyles='dashed')
     pl.xlabel('Source (ADU)')
     pl.ylabel('Victim (ADU)')
     pl.title('Xtalk Coefficient:'+str(np.round(b,7))+'$\pm$'+str(np.round(SEb,7))+'('+str(round(chi2,1))+')')
@@ -893,7 +961,7 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
         pl.close()
     else:
         pl.show()
-    """
+    
     return(b)
 
 #-------sextractor -------------------
@@ -1337,58 +1405,42 @@ def ccd_match_offset_for_tilt(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=No
 
 
 def ccd2file(CCD):
-    if CCD=='n4':
-        fileNo=7
-    if CCD=='n5':
-        fileNo=8
-    if CCD=='n6':
-        fileNo=9
-    if CCD=='n7':
-        fileNo=10
-    if CCD=='s4':
-        fileNo=11
-    if CCD=='s5':
-        fileNo=12
-    if CCD=='s6':
-        fileNo=13
-    if CCD=='s7':
-        fileNo=14
-    if CCD=='s10':
-        fileNo=15
-    if CCD=='s11':
-        fileNo=16
-    if CCD=='s12':
-        fileNo=17
-    if CCD=='s13':
-        fileNo=18
-    if CCD=='s16':
-        fileNo=19
-    if CCD=='s17':
-        fileNo=20
-    if CCD=='s18':
-        fileNo=21
-    if CCD=='s19':
-        fileNo=22
-    if CCD=='s21':
-        fileNo=23
-    if CCD=='s22':
-        fileNo=24
-    if CCD=='s23':
-        fileNo=25
-    if CCD=='s24':
-        fileNo=26
-    if CCD=='s26':
+    if CCD=='s1':
         fileNo=27
-    if CCD=='s27':
-        fileNo=28
-    if CCD=='s28':
-        fileNo=29
-    if CCD=='s29':
-        fileNo=30
-    if CCD=='s30':
-        fileNo=31
-    if CCD=='s31':
-        fileNo=32
+    if CCD=='s2':
+        fileNo=8
+    if CCD=='s3':
+        fileNo=9
+    if CCD=='s4':
+        fileNo=10
+    if CCD=='s5':
+        fileNo=11
+    if CCD=='s6':
+        fileNo=12
+    if CCD=='s7':
+        fileNo=13
+    if CCD=='n7':
+        fileNo=14
+    if CCD=='n6':
+        fileNo=15
+    if CCD=='n5':
+        fileNo=16
+    if CCD=='n4':
+        fileNo=17
+    if CCD=='n2':
+        fileNo=18
+    if CCD=='n1':
+        fileNo=19
+    if CCD=='s9':
+        fileNo=20
+    if CCD=='s10':
+        fileNo=21
+    if CCD=='s11':
+        fileNo=22
+    if CCD=='s12':
+        fileNo=23
+    if CCD=='s13':
+        fileNo=24
     return fileNo
 
 
