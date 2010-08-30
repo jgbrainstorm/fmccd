@@ -19,7 +19,7 @@ import string
 #import scipy.optimize as op
 from fermiMCCD_def import *
 #import scipy.stats.kde as ke
-#from scipy.stats import kstest
+from scipy.stats import kstest
 
 #----gaussfit-----------------
 
@@ -1405,58 +1405,42 @@ def ccd_match_offset_for_tilt(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=No
 
 
 def ccd2file(CCD):
-    if CCD=='n4':
-        fileNo=7
-    if CCD=='n5':
-        fileNo=8
-    if CCD=='n6':
-        fileNo=9
-    if CCD=='n7':
-        fileNo=10
-    if CCD=='s4':
-        fileNo=11
-    if CCD=='s5':
-        fileNo=12
-    if CCD=='s6':
-        fileNo=13
-    if CCD=='s7':
-        fileNo=14
-    if CCD=='s10':
-        fileNo=15
-    if CCD=='s11':
-        fileNo=16
-    if CCD=='s12':
-        fileNo=17
-    if CCD=='s13':
-        fileNo=18
-    if CCD=='s16':
-        fileNo=19
-    if CCD=='s17':
-        fileNo=20
-    if CCD=='s18':
-        fileNo=21
-    if CCD=='s19':
-        fileNo=22
-    if CCD=='s21':
-        fileNo=23
-    if CCD=='s22':
-        fileNo=24
-    if CCD=='s23':
-        fileNo=25
-    if CCD=='s24':
-        fileNo=26
-    if CCD=='s26':
+    if CCD=='s1':
         fileNo=27
-    if CCD=='s27':
-        fileNo=28
-    if CCD=='s28':
-        fileNo=29
-    if CCD=='s29':
-        fileNo=30
-    if CCD=='s30':
-        fileNo=31
-    if CCD=='s31':
-        fileNo=32
+    if CCD=='s2':
+        fileNo=8
+    if CCD=='s3':
+        fileNo=9
+    if CCD=='s4':
+        fileNo=10
+    if CCD=='s5':
+        fileNo=11
+    if CCD=='s6':
+        fileNo=12
+    if CCD=='s7':
+        fileNo=13
+    if CCD=='n7':
+        fileNo=14
+    if CCD=='n6':
+        fileNo=15
+    if CCD=='n5':
+        fileNo=16
+    if CCD=='n4':
+        fileNo=17
+    if CCD=='n2':
+        fileNo=18
+    if CCD=='n1':
+        fileNo=19
+    if CCD=='s9':
+        fileNo=20
+    if CCD=='s10':
+        fileNo=21
+    if CCD=='s11':
+        fileNo=22
+    if CCD=='s12':
+        fileNo=23
+    if CCD=='s13':
+        fileNo=24
     return fileNo
 
 

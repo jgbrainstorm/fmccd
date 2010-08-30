@@ -110,9 +110,17 @@ hdu=pf.PrimaryHDU(coef)
 hdulist = pf.HDUList([hdu])
 hdulist.writeto(dir+'xtalk_auto_8_21_10_coef.fits')
 
-ccdName=('n4l','n4r','n5l','n5r','n6l','n6r','n7l','n7r','s7l','s7r','s6l','s6r','s5l','s5r','s4l','s4r','s3l','s3r','s2l','s2r','s10l','s10r','s11l','s11r','s12l','s12r','s13l','s13r','s19l','s19r','s18l','s18r','s17l','s17r','s16l','s16r','s21l','s21r','s22l','s22r','s23l','s23r','s24l','s24r','s28l','s28r','s27l','s27r','s26l','s26r','s29l','s29r','s30l','s30r','s31l','s31r')
+
+
+#---------analysis of data----------
+
+dir='/data.02/xtalk_8_21_10/full/'
+
+ccdName=['s1l','s1r','s2l','s2r','s3l','s3r','s4l','s4r','s5l','s5r','s6l','s6r','s7l','s7r','n7l','n7r','n6l','n6r','n5l','n5r','n4l','n4r','n2l','n2r','n1l','n1r','s9l','s9r','s10l','s10r','s11l','s11r','s12l','s12r','s13l','s13r']
+
+
 N=len(ccdName)
-coef=pf.getdata(dir+'xtalk_auto_1_28_10_coef.fits')
+coef=pf.getdata(dir+'xtalk_auto_8_21_10_coef.fits')
 coef[(coef > 0.001)*(coef < 1)] = 3
 coef[coef < -0.001] = 2
 pl.figure(figsize=(45, 45)) 
@@ -124,5 +132,53 @@ pl.yticks(np.arange(N-1)+0.5,ccdName)
 ax=pl.axes()
 ax.grid(color='r', linestyle='-', linewidth=2)
 
-pl.savefig(dir+'fig/xcoeff_matrix.png')
+pl.savefig(dir+'fig/spec_xcoeff_matrix.png')
+pl.close()
 
+
+coef=pf.getdata(dir+'xtalk_auto_8_21_10_coef.fits')
+coef[(coef > 0.0001)*(coef < 1)] = 3
+coef[coef < -0.0001] = 2
+pl.figure(figsize=(45, 45)) 
+pl.pcolor(coef,edgecolors='w',linewidths=0.1)
+pl.colorbar()
+pl.xticks(np.arange(N-1)+0.5,ccdName)
+pl.yticks(np.arange(N-1)+0.5,ccdName)
+
+ax=pl.axes()
+ax.grid(color='r', linestyle='-', linewidth=2)
+
+pl.savefig(dir+'fig/0.0001_xcoeff_matrix.png')
+pl.close()
+
+
+coef=pf.getdata(dir+'xtalk_auto_8_21_10_coef.fits')
+coef[(coef > 0.0002)*(coef < 1)] = 3
+coef[coef < -0.0002] = 2
+pl.figure(figsize=(45, 45)) 
+pl.pcolor(coef,edgecolors='w',linewidths=0.1)
+pl.colorbar()
+pl.xticks(np.arange(N-1)+0.5,ccdName)
+pl.yticks(np.arange(N-1)+0.5,ccdName)
+
+ax=pl.axes()
+ax.grid(color='r', linestyle='-', linewidth=2)
+
+pl.savefig(dir+'fig/0.0002_xcoeff_matrix.png')
+pl.close()
+
+
+coef=pf.getdata(dir+'xtalk_auto_8_21_10_coef.fits')
+coef[(coef > 0.0005)*(coef < 1)] = 3
+coef[coef < -0.0005] = 2
+pl.figure(figsize=(45, 45)) 
+pl.pcolor(coef,edgecolors='w',linewidths=0.1)
+pl.colorbar()
+pl.xticks(np.arange(N-1)+0.5,ccdName)
+pl.yticks(np.arange(N-1)+0.5,ccdName)
+
+ax=pl.axes()
+ax.grid(color='r', linestyle='-', linewidth=2)
+
+pl.savefig(dir+'fig/0.0005_xcoeff_matrix.png')
+pl.close()

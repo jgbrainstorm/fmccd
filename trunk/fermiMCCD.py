@@ -19,7 +19,7 @@ import string
 #import scipy.optimize as op
 from fermiMCCD_def import *
 #import scipy.stats.kde as ke
-from scipy.stats import kstest
+#from scipy.stats import kstest
 
 #----gaussfit-----------------
 

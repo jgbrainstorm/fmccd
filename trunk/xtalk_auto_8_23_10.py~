@@ -112,7 +112,7 @@ hdulist.writeto(dir+'xtalk_auto_8_21_10_coef.fits')
 
 ccdName=('n4l','n4r','n5l','n5r','n6l','n6r','n7l','n7r','s7l','s7r','s6l','s6r','s5l','s5r','s4l','s4r','s3l','s3r','s2l','s2r','s10l','s10r','s11l','s11r','s12l','s12r','s13l','s13r','s19l','s19r','s18l','s18r','s17l','s17r','s16l','s16r','s21l','s21r','s22l','s22r','s23l','s23r','s24l','s24r','s28l','s28r','s27l','s27r','s26l','s26r','s29l','s29r','s30l','s30r','s31l','s31r')
 N=len(ccdName)
-coef=pf.getdata('/data_pan2/xtalk_1_28_10_png/xtalk_auto_1_28_10_coef.fits')
+coef=pf.getdata(dir+'xtalk_auto_1_28_10_coef.fits')
 coef[(coef > 0.001)*(coef < 1)] = 3
 coef[coef < -0.001] = 2
 pl.figure(figsize=(45, 45)) 
