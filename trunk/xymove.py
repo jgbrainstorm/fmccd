@@ -3,6 +3,7 @@ This code define the CCD coordinate
 
 """
 import os
+from fermiMCCD_def import *
 
 def moveto(CCD,xoffset=None,yoffset=None):
 
@@ -88,19 +89,39 @@ def moveto(CCD,xoffset=None,yoffset=None):
     N30=["N30",-185.988,0.]
     N31=["N31",-185.988,-63.890]
 
+#------------Guiding CCD-----------
+    GS2=["G2S",185.988,111.8075]
+    GS1=["G1S",152.172,161.7525]
+    GN2=["G2N",-185.988,111.8075]
+    GN1=["G1N",-152.172,161.7525]
 
     S=["S",S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12,S13,S14,S15,S16,S17,S18,S19,S20,S21,S22,S23,S24,S25,S26,S27,S28,S29,S30,S31]
     N=["N",N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N11,N12,N13,N14,N15,N16,N17,N18,N19,N20,N21,N22,N23,N24,N25,N26,N27,N28,N29,N30,N31]
-    idx=int(CCD[1:])
 
-    if CCD[0]=='s' or CCD[0]=='S':
+    if CCD=='g1n' or CCD=='G1N':
+        x_target = GN1[2]+xoffset
+        y_target = GN1[1]+yoffset
+    elif CCD=='g2n' or CCD=='G2N':
+        x_target = GN2[2]+xoffset
+        y_target = GN2[1]+yoffset
+    elif CCD=='g1s' or CCD=='G1S':
+        x_target = GS1[2]+xoffset
+        y_target = GS1[1]+yoffset
+    elif CCD=='g2s' or CCD=='G2S':
+        x_target = GS2[2]+xoffset
+        y_target = GS2[1]+yoffset
+    elif CCD[0]=='s' or CCD[0]=='S':
+        idx=int(CCD[1:])
         x_target = S[idx][2]+xoffset
         y_target = S[idx][1]+yoffset
-    else:
+    elif CCD[0]=='n' or CCD[0]=='N':
+        idx=int(CCD[1:])
         x_target = N[idx][2]+xoffset
-        y_target = N[idx][1]+yoffset
-        
-    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 100000 "ma,'+str(x_target)+','+str(y_target)+'"')
+        y_target = N[idx][1]+yoffset 
+    else:
+        print "----Not in the range! Try again!-----"
+
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 500000 "ma,'+str(x_target)+','+str(y_target)+'"')
     return(x_target,y_target)    
    
 #------move to left channel-----
@@ -116,7 +137,7 @@ def moveto_l(CCD,xoffset=None,yoffset=None):
     else:
         y_target = y_target + 9.0
 
-    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 100000 "ma,'+str(x_target)+','+str(y_target)+'"')
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 500000 "ma,'+str(x_target)+','+str(y_target)+'"')
     return(x_target,y_target)    
 
   
@@ -134,17 +155,17 @@ def moveto_r(CCD,xoffset=None,yoffset=None):
     else:
         y_target = y_target - 9.0
 
-    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 100000 "ma,'+str(x_target)+','+str(y_target)+'"')
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 500000 "ma,'+str(x_target)+','+str(y_target)+'"')
    
     return(x_target,y_target)      
 
 #-------move to right channel----
 
 def moveto_origin():
-    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 100000 "ma,0,0"')
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 -t 500000 "ma,0,0"')
     return("moved to origin")
 
 
 def moveto_xy(x,y):
-    os.system('sendsockcmd -h 131.225.90.43 -p 2055 100000 "ma,'+str(x)+','+str(y)+'"')
+    os.system('sendsockcmd -h 131.225.90.43 -p 2055 500000 "ma,'+str(x)+','+str(y)+'"')
     return("moved to the position you specified")
