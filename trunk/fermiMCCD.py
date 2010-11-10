@@ -32,32 +32,46 @@ def kde(x=None,range=None):
 #-----Robust Mean--------------
 def robust_mean(x):
     y = x.flatten()
-    n = len(y)
-    y.sort()
-    ind_qt1 = round((n+1)/4.)
-    ind_qt3 = round((n+1)*3/4.)
-    IQR = y[ind_qt3]- y[ind_qt1]
-    lowFense = y[ind_qt1] - 1.5*IQR
-    highFense = y[ind_qt3] + 1.5*IQR
-    ok = (y>lowFense)*(y<highFense)
-    yy=y[ok]
-    return yy.mean(dtype='double')
+    if len(np.unique(y))==1:
+        meany=y[0]
+    else:
+        n = len(y)
+        y.sort()
+        ind_qt1 = round((n+1)/4.)
+        ind_qt3 = round((n+1)*3/4.)
+        IQR = y[ind_qt3]- y[ind_qt1]
+        lowFense = y[ind_qt1] - 1.5*IQR
+        highFense = y[ind_qt3] + 1.5*IQR
+        if lowFense == highFense:
+            meany=lowFense
+        else:
+            ok = (y>lowFense)*(y<highFense)
+            yy=y[ok]
+            meany=yy.mean(dtype='double')
+    return meany
 
 
 #-------Robust Standard Deviation---
 
 def robust_std(x):
     y = x.flatten()
-    n = len(y)
-    y.sort()
-    ind_qt1 = round((n+1)/4.)
-    ind_qt3 = round((n+1)*3/4.)
-    IQR = y[ind_qt3]- y[ind_qt1]
-    lowFense = y[ind_qt1] - 1.5*IQR
-    highFense = y[ind_qt3] + 1.5*IQR
-    ok = (y>lowFense)*(y<highFense)
-    yy=y[ok]
-    return yy.std(dtype='double')
+    if len(np.unique(y))==0:
+        stdy=0.
+    else:
+        n = len(y)
+        y.sort()
+        ind_qt1 = round((n+1)/4.)
+        ind_qt3 = round((n+1)*3/4.)
+        IQR = y[ind_qt3]- y[ind_qt1]
+        lowFense = y[ind_qt1] - 1.5*IQR
+        highFense = y[ind_qt3] + 1.5*IQR
+        if lowFense == highFense:
+            stdy=lowFense
+        else:
+            ok = (y>lowFense)*(y<highFense)
+            yy=y[ok]
+            stdy=yy.std(dtype='double')
+    return stdy
 
 #-------weighted mean, std--------
 def wmean(x,xerr):
@@ -78,16 +92,23 @@ def wsd(x,xerr):
 
 def robust_var(x):
     y = x.flatten()
-    n = len(y)
-    y.sort()
-    ind_qt1 = round((n+1)/4.)
-    ind_qt3 = round((n+1)*3/4.)
-    IQR = y[ind_qt3]- y[ind_qt1]
-    lowFense = y[ind_qt1] - 1.5*IQR
-    highFense = y[ind_qt3] + 1.5*IQR
-    ok = (y>lowFense)*(y<highFense)
-    yy=y[ok]
-    return yy.var(dtype='double')
+    if len(np.unique(y))==0:
+        vary=0.
+    else:
+        n = len(y)
+        y.sort()
+        ind_qt1 = round((n+1)/4.)
+        ind_qt3 = round((n+1)*3/4.)
+        IQR = y[ind_qt3]- y[ind_qt1]
+        lowFense = y[ind_qt1] - 1.5*IQR
+        highFense = y[ind_qt3] + 1.5*IQR
+        if lowFense == highFense:
+            vary=lowFense
+        else:
+            ok = (y>lowFense)*(y<highFense)
+            yy=y[ok]
+            vary=yy.var(dtype='double')
+    return vary
 
 
 #--------some binned plots-----
@@ -455,23 +476,32 @@ def image_reduction(dir=None,biasName=None):
 def linearity(NameFits,NameBias,Channel,shift=None,left=None):
 
     if left == None or left == 1:
-        colmin=150
-        colmax=350
-        rowmin=200 #lower
-        rowmax=500
+        #colmin=150
+        #colmax=350
+        colmin=300
+        colmax=800
+        #rowmin=200 #lower
+        #rowmax=500
         #xmin=2000 #middle
         #xmax=2500    
         #xmin=3600 #upper
         #xmax=4000
+        rowmin=100  #new region
+        rowmax=200
     else:
+        #colmin=1300
+        #colmax=1750
         colmin=1300
-        colmax=1750
-        rowmin=200
-        rowmax=500
+        colmax=1800
+        #rowmin=200
+        #rowmax=500
+        rowmin=100
+        rowmax=200
     #the following change is due to the bad part on the new CCD mounted 4/15/2010.
-    if Channel == 17:
-        rowmin=2000
-        rowmax=2500
+    detector = pf.open(NameBias)[Channel].header['DETSER']
+    if detector[-1]=='N':
+        rowmin=3946
+        rowmax=4046
        
     if shift == 1:
         colshift = np.random.random_integers(0,500,1)
@@ -485,8 +515,9 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
     mean_b = np.zeros(num)
     var_b = np.zeros(num)
     exptime=np.zeros(num)
+    #exptime=np.arange(5,130,5)
     #exptime=np.append(np.arange(0,0.4,0.04),np.arange(0.02,0.46,0.04))
-    detector = pf.open(NameBias)[Channel].header['DETSER']
+    
     for i in range(0,num):
         bias,biashdr = readCCDFits(NameBias,Channel)
         bias = bias[rowmin:rowmax,colmin:colmax]
@@ -501,7 +532,8 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         diff_b= ba - bb
         mean_b[i] = robust_mean(add_b)/2.
         var_b[i] = robust_var(diff_b)/2.
-        exptime[i]=pf.open(NameFits[i*2])[0].header['exptime']        
+        exptime[i]=pf.open(NameFits[i*2])[0].header['EXPTIME']        
+        #exptime[i]=i*5
         ok = (mean_b > 0)*(mean_b <20000)*(var_b < 8000)          
         if len(mean_b[ok]) > 2:
             (a,b,SEa,SEb,R2) = linefit(mean_b[ok],var_b[ok])
@@ -813,7 +845,7 @@ def xtalk(imageHDU=None,sourceCH=None,victimCH=None,winSg=None,winBg=None,NamePn
     ss=sso.reshape(sso.shape[0]*sso.shape[1])
     vv=vvo.reshape(vvo.shape[0]*vvo.shape[1])
 
-    idd = (ss > 10000)*(ss < 65000)
+    idd = (ss > 35000)*(ss < 65000)
     ss=ss[idd]
     vv=vv[idd]
     vverr = np.sqrt(np.abs(vv))
@@ -928,7 +960,7 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
     ss=sso.reshape(sso.shape[0]*sso.shape[1])
     vv=vvo.reshape(vvo.shape[0]*vvo.shape[1])
 
-    idd = (ss > 10000)*(ss < 65000)
+    idd = (ss > 35000)*(ss < 65000)
     ss=ss[idd]
     vv=vv[idd]
     #(a,b,SEa,SEb,chi2)=binlinfit(ss,vv,2000)
@@ -948,7 +980,7 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
     pl.plot(sso,vvo,'b.')
     #bin_scatter(ss,vv,binsize=2000)
     pl.plot(np.array([10000,65000]),np.array([10000,65000])*b+a,'r-')
-    pl.vlines(10000,-100,100,color='green',linestyles='dashed')
+    pl.vlines(35000,-100,100,color='green',linestyles='dashed')
     pl.xlabel('Source (ADU)')
     pl.ylabel('Victim (ADU)')
     pl.title('Xtalk Coefficient:'+str(np.round(b,7))+'$\pm$'+str(np.round(SEb,7))+'('+str(round(chi2,1))+')')
@@ -963,6 +995,84 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
         pl.show()
     
     return(b)
+
+
+def xcoeff_hist(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=None):
+
+    rowmin = winSg[0]
+    rowmax = winSg[1]
+    colmin = winSg[2]
+    colmax = winSg[3]
+
+    rowminBg = winBg[0]
+    rowmaxBg = winBg[1]   
+    colminBg = winBg[2]    # for background substraction
+    colmaxBg = winBg[3]
+    
+    lefts = np.mod(source.ext,2)
+    leftv = np.mod(victim.ext,2)
+    source.loaddata(imgNumber)
+    victim.loaddata(imgNumber)
+    imgS = source.data
+    bgimgS = np.median(source.data[rowminBg:rowmaxBg,colminBg:colmaxBg])
+    imgS = imgS[rowmin:rowmax,colmin:colmax] - bgimgS
+
+    imgV = victim.data
+    
+    if lefts != leftv:
+        imgV = reflectImg(imgV,col=1)
+        
+    bgimgV = np.median(victim.data[rowminBg:rowmaxBg,colminBg:colmaxBg])
+    imgV = imgV[rowmin:rowmax,colmin:colmax] - bgimgV
+    
+    sso = imgS
+    vvo = imgV
+    
+    ss=sso.reshape(sso.shape[0]*sso.shape[1])
+    vv=vvo.reshape(vvo.shape[0]*vvo.shape[1])
+
+    idd = (ss > 35000)*(ss < 65000)
+    if(len(np.unique(ss[idd])) > 10)*(len(np.unique(vv[idd])) > 5):
+        ss=ss[idd]
+        vv=vv[idd]
+        xcof=vv*1./ss
+        b=robust_mean(xcof)
+        pl.figure(figsize=(15, 10))
+        pl.subplot(2,2,1)
+        pl.imshow(sso,origin='lower')
+        pl.title('Source: '+source.pos)
+        pl.subplot(2,2,2)
+        pl.imshow(vvo,origin='lower')
+        pl.title('Victim: '+victim.pos)
+        pl.subplot(2,2,3)
+        pl.hold(True)
+        pl.boxplot(xcof)
+        pl.title('Xtalk Coefficient:'+str(np.round(b,7))+'$\pm$'+str(np.round(robust_std(xcof),7)))
+        b=np.round(b,7)
+        pl.subplot(2,2,4)
+        pl.imshow(vvo-b*sso,origin='lower')
+        pl.title('Corrected Victim '+victim.pos)
+        if NamePng != None:
+            pl.savefig(NamePng+'xtalk_'+source.pos+'_'+victim.pos+'.png')
+            pl.close()
+        else:
+            pl.show()
+    else:
+        pl.figure(figsize=(15, 10))
+        pl.subplot(2,2,1)
+        pl.imshow(sso,origin='lower')
+        pl.title('Source: '+source.pos)
+        pl.subplot(2,2,2)
+        pl.imshow(vvo,origin='lower')
+        pl.title('Victim: '+victim.pos)
+        b=0
+        if NamePng != None:
+            pl.savefig(NamePng+'xtalk_'+source.pos+'_'+victim.pos+'.png')
+            pl.close()
+        else:
+            pl.show()
+    return(b)
+
 
 #-------sextractor -------------------
 
