@@ -1,0 +1,24 @@
+#! /usr/bin/env python
+import sys
+if len(sys.argv) == 1:
+    print 'syntax: noiseall imageName'
+else:
+    import numpy as np
+    import pylab as pl
+    import pyfits as pf
+    hdu=pf.open(sys.argv[1])
+    nn=len(hdu)
+    print '----extension---noiseL (ADU)---minL ---maxL----noiseR (ADU)---minR ---maxR'
+    for i in np.arange(1,nn,1):
+        b=pf.getdata(sys.argv[1],i)
+        noiseL=np.std(b[2000:2500,10:50])
+        noiseR=np.std(b[2000:2500,2110:2150])
+        minL=np.min(b[2000:2500,1035:1060])
+        maxL=np.max(b[2000:2500,1035:1060])
+        minR=np.min(b[2000:2500,1085:1100])
+        maxR=np.max(b[2000:2500,1085:1100])
+        print i,'--',noiseL,'----',minL,'----',maxL,'----',noiseR,'----',minR,'----',maxR,'----'
+
+        
+
+    
