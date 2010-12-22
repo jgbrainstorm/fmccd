@@ -51,109 +51,9 @@ for i in range(Nfile):
 
 #step 4: the data
 
+baseDir='/home/jghao/research/ccd/imager/flatness_8_21_10/'
 cat=gl.glob(baseDir+'Image_*catalog.fits')
 cat.sort()
-
-
-#------0680,0681,0682, 0697 to check the repeatibility of S12---
-
-b0=pf.getdata(cat[0])
-b1=pf.getdata(cat[1])
-b2=pf.getdata(cat[2])
-b3=pf.getdata(cat[17])
-
-f0=b0.field('FLUX_BEST')
-f1=b1.field('FLUX_BEST')
-f2=b2.field('FLUX_BEST')
-f3=b3.field('FLUX_BEST')
-
-ok0=f0>np.mean(f0)
-ok1=f1>np.mean(f1)
-ok2=f2>np.mean(f2)
-ok3=f3>np.mean(f3)
-
-ra0=b0.field('X_WORLD')[ok0]
-dec0=b0.field('Y_WORLD')[ok0]
-ra1=b1.field('X_WORLD')[ok1]
-dec1=b1.field('Y_WORLD')[ok1]
-ra2=b2.field('X_WORLD')[ok2]
-dec2=b2.field('Y_WORLD')[ok2]
-ra3=b3.field('X_WORLD')[ok3]
-dec3=b3.field('Y_WORLD')[ok3]
-
-y0,x0=wcs2pix(ra0,dec0)
-y1,x1=wcs2pix(ra1,dec1)
-y2,x2=wcs2pix(ra2,dec2)
-y3,x3=wcs2pix(ra3,dec3)
-
-in1,in2=xy_matching(xa=x0,ya=y0,xb=x1,yb=y1,sep=2)
-match_analysis(xa=x0,ya=y0,xb=x1,yb=y1,ina=in1,inb=in2)
-
-in1,in2=xy_matching(xa=x0,ya=y0,xb=x2,yb=y2,sep=2)
-match_analysis(xa=x0,ya=y0,xb=x2,yb=y2,ina=in1,inb=in2)
-
-in1,in2=xy_matching(xa=x0,ya=y0,xb=x3,yb=y3,sep=2)
-match_analysis(xa=x0,ya=y0,xb=x3,yb=y3,ina=in1,inb=in2)
-
-in1,in2=xy_matching(xa=x1,ya=y1,xb=x2,yb=y2,sep=2)
-match_analysis(xa=x1,ya=y1,xb=x2,yb=y2,ina=in1,inb=in2)
-
-in1,in2=xy_matching(xa=x1,ya=y1,xb=x3,yb=y3,sep=2)
-match_analysis(xa=x1,ya=y1,xb=x3,yb=y3,ina=in1,inb=in2)
-
-
-
-#------0683,85 check the repeatibility of S17---
-
-b0=pf.getdata(cat[3])
-b1=pf.getdata(cat[5])
-
-
-f0=b0.field('FLUX_BEST')
-f1=b1.field('FLUX_BEST')
-
-
-ok0=f0>np.mean(f0)
-ok1=f1>np.mean(f1)
-
-
-ra0=b0.field('X_WORLD')[ok0]
-dec0=b0.field('Y_WORLD')[ok0]
-ra1=b1.field('X_WORLD')[ok1]
-dec1=b1.field('Y_WORLD')[ok1]
-
-y0,x0=wcs2pix(ra0,dec0)
-y1,x1=wcs2pix(ra1,dec1)
-
-in1,in2=xy_matching(xa=x0,ya=y0,xb=x1,yb=y1,sep=2)
-
-match_analysis(xa=x0,ya=y0,xb=x1,yb=y1,ina=in1,inb=in2)
-
-
-#------0684,0686 check the repeatibility of S23---
-
-b0=pf.getdata(cat[4])
-b1=pf.getdata(cat[6])
-
-
-f0=b0.field('FLUX_BEST')
-f1=b1.field('FLUX_BEST')
-
-
-ok0=f0>np.mean(f0)
-ok1=f1>np.mean(f1)
-
-ra0=b0.field('X_WORLD')[ok0]
-dec0=b0.field('Y_WORLD')[ok0]
-ra1=b1.field('X_WORLD')[ok1]
-dec1=b1.field('Y_WORLD')[ok1]
-
-y0,x0=wcs2pix(ra0,dec0)
-y1,x1=wcs2pix(ra1,dec1)
-
-in1,in2=xy_matching(xa=x0,ya=y0,xb=x1,yb=y1,sep=2)
-match_analysis(xa=x0,ya=y0,xb=x1,yb=y1,ina=in1,inb=in2)
-
 
 #---------match S2 and S3-----
 
@@ -177,27 +77,23 @@ dec1=b1.field('Y_WORLD')[ok1]
 y0,x0=wcs2pix(ra0,dec0)
 y1,x1=wcs2pix(ra1,dec1)
 
-in1,in2=ccd_match(CCD1='s2',xa=x0,ya=y0,CCD2='s3',xb=x1,yb=y1,xadd=0,yadd=0,sep=80)
-ccd_match_offset(CCD1='2S',xa=x0,ya=y0,CCD2='3S',xb=x1,yb=y1,ina=in1,inb=in2)
+in1,in2=ccd_match(CCD1='s2',xa=x0,ya=y0,CCD2='s3',xb=x1,yb=y1,xadd=0,yadd=0,sep=70)
+ccd_match_offset(CCD1='s2',xa=x0,ya=y0,CCD2='s3',xb=x1,yb=y1,ina=in1,inb=in2)
+ccd_match_check(CCD1='s2',xa=x0,ya=y0,CCD2='s3',xb=x1,yb=y1)
 
 
 
 
-
-#---------match N4 and N6-----
-
-
-b0=pf.getdata(cat[7])
-b1=pf.getdata(cat[9])
+#---------match s2 and s9-----
 
 
+b0=pf.getdata(cat[1])
+b1=pf.getdata(cat[13])
 f0=b0.field('FLUX_BEST')
 f1=b1.field('FLUX_BEST')
-
-
+ok0=f0>100000
 ok0=f0>np.mean(f0)
 ok1=f1>np.mean(f1)
-
 ra0=b0.field('X_WORLD')[ok0]
 dec0=b0.field('Y_WORLD')[ok0]
 ra1=b1.field('X_WORLD')[ok1]
@@ -206,24 +102,21 @@ dec1=b1.field('Y_WORLD')[ok1]
 y0,x0=wcs2pix(ra0,dec0)
 y1,x1=wcs2pix(ra1,dec1)
 
-in1,in2=ccd_match(CCD1='n4',xa=x0,ya=y0,CCD2='n6',xb=x1,yb=y1,xadd=0,yadd=-150,sep=90)
-ccd_match_offset(CCD1='N4',xa=x0,ya=y0,CCD2='N6',xb=x1,yb=y1,ina=in1,inb=in2,xadd=0,yadd=-150)
+in1,in2=ccd_match(CCD1='s2',xa=x0,ya=y0,CCD2='s9',xb=x1,yb=y1,xadd=0,yadd=0,sep=90)
+ccd_match_check(CCD1='s2',xa=x0,ya=y0,CCD2='s9',xb=x1,yb=y1)
+
+l0,lerr0=offset(CCD1='s2',CCD2='s9',cat=cat,xadd=0,yadd=0,sep=80,crit_f=3)
+l1,lerr1=offset(CCD1='s9',CCD2='s2',cat=cat,xadd=0,yadd=0,sep=80,crit_f=3)
+
+#---------match s2 and s10-----
 
 
-#---------match N4 and N5-----
-
-
-b0=pf.getdata(cat[7])
-b1=pf.getdata(cat[8])
-
-
+b0=pf.getdata(cat[1])
+b1=pf.getdata(cat[14])
 f0=b0.field('FLUX_BEST')
 f1=b1.field('FLUX_BEST')
-
-
 ok0=f0>np.mean(f0)
 ok1=f1>np.mean(f1)
-
 ra0=b0.field('X_WORLD')[ok0]
 dec0=b0.field('Y_WORLD')[ok0]
 ra1=b1.field('X_WORLD')[ok1]
@@ -232,28 +125,22 @@ dec1=b1.field('Y_WORLD')[ok1]
 y0,x0=wcs2pix(ra0,dec0)
 y1,x1=wcs2pix(ra1,dec1)
 
-in1,in2=ccd_match(CCD1='n4',xa=x0,ya=y0,CCD2='n5',xb=x1,yb=y1,xadd=0,yadd=0,sep=80)
+in1,in2=ccd_match(CCD1='s2',xa=x0,ya=y0,CCD2='s10',xb=x1,yb=y1,xadd=0,yadd=0,sep=120)
+ccd_match_check(CCD1='s2',xa=x0,ya=y0,CCD2='s10',xb=x1,yb=y1)
 
-ccd_match_offset(CCD1='N4',xa=x0,ya=y0,CCD2='N5',xb=x1,yb=y1,ina=in1,inb=in2,xadd=0,yadd=0)
-
-
-
-
-
-#---------match N5 and N4-----
+l0,lerr0=offset(CCD1='s2',CCD2='s10',cat=cat,xadd=0,yadd=0,sep=80,crit_f=3)
+l1,lerr1=offset(CCD1='s10',CCD2='s2',cat=cat,xadd=0,yadd=0,sep=80,crit_f=3)
 
 
-b0=pf.getdata(cat[8])
-b1=pf.getdata(cat[7])
+#---------match s2 and s11-----
 
 
+b0=pf.getdata(cat[1])
+b1=pf.getdata(cat[15])
 f0=b0.field('FLUX_BEST')
 f1=b1.field('FLUX_BEST')
-
-
 ok0=f0>np.mean(f0)
 ok1=f1>np.mean(f1)
-
 ra0=b0.field('X_WORLD')[ok0]
 dec0=b0.field('Y_WORLD')[ok0]
 ra1=b1.field('X_WORLD')[ok1]
@@ -262,149 +149,11 @@ dec1=b1.field('Y_WORLD')[ok1]
 y0,x0=wcs2pix(ra0,dec0)
 y1,x1=wcs2pix(ra1,dec1)
 
-in1,in2=ccd_match(CCD1='n5',xa=x0,ya=y0,CCD2='n4',xb=x1,yb=y1,xadd=0,yadd=0,sep=80)
-
-ccd_match_offset(CCD1='N5',xa=x0,ya=y0,CCD2='N4',xb=x1,yb=y1,ina=in1,inb=in2,xadd=0,yadd=0)
-
-
-
-
-#---------match N5 and N6-----
-
-
-b0=pf.getdata(cat[8])
-b1=pf.getdata(cat[9])
-
-
-f0=b0.field('FLUX_BEST')
-f1=b1.field('FLUX_BEST')
-
-
-ok0=f0>np.mean(f0)
-ok1=f1>np.mean(f1)
-
-ra0=b0.field('X_WORLD')[ok0]
-dec0=b0.field('Y_WORLD')[ok0]
-ra1=b1.field('X_WORLD')[ok1]
-dec1=b1.field('Y_WORLD')[ok1]
-
-y0,x0=wcs2pix(ra0,dec0)
-y1,x1=wcs2pix(ra1,dec1)
-
-in1,in2=ccd_match(CCD1='n5',xa=x0,ya=y0,CCD2='n6',xb=x1,yb=y1,xadd=0,yadd=0,sep=80)
-ccd_match_offset(CCD1='N5',xa=x0,ya=y0,CCD2='N6',xb=x1,yb=y1,ina=in1,inb=in2,xadd=0,yadd=0)
-
-
-
-#---------match N6 and N5-----
-
-
-b0=pf.getdata(cat[9])
-b1=pf.getdata(cat[8])
-
-
-f0=b0.field('FLUX_BEST')
-f1=b1.field('FLUX_BEST')
-
-
-ok0=f0>np.mean(f0)
-ok1=f1>np.mean(f1)
-
-ra0=b0.field('X_WORLD')[ok0]
-dec0=b0.field('Y_WORLD')[ok0]
-ra1=b1.field('X_WORLD')[ok1]
-dec1=b1.field('Y_WORLD')[ok1]
-
-y0,x0=wcs2pix(ra0,dec0)
-y1,x1=wcs2pix(ra1,dec1)
-
-in1,in2=ccd_match(CCD1='n6',xa=x0,ya=y0,CCD2='n5',xb=x1,yb=y1,xadd=0,yadd=0,sep=80)
-ccd_match_offset(CCD1='N6',xa=x0,ya=y0,CCD2='N5',xb=x1,yb=y1,ina=in1,inb=in2,xadd=0,yadd=0)
-
-
-
-
-
-
-
-
-#---------match N6 and N7-----
-
-
-b0=pf.getdata(cat[9])
-b1=pf.getdata(cat[10])
-
-
-f0=b0.field('FLUX_BEST')
-f1=b1.field('FLUX_BEST')
-
-
-ok0=f0>np.mean(f0)
-ok1=f1>np.mean(f1)
-
-ra0=b0.field('X_WORLD')[ok0]
-dec0=b0.field('Y_WORLD')[ok0]
-ra1=b1.field('X_WORLD')[ok1]
-dec1=b1.field('Y_WORLD')[ok1]
-
-y0,x0=wcs2pix(ra0,dec0)
-y1,x1=wcs2pix(ra1,dec1)
-
-in1,in2=ccd_match(CCD1='n6',xa=x0,ya=y0,CCD2='n7',xb=x1,yb=y1,xadd=0,yadd=0,sep=50)
-ccd_match_offset(CCD1='n6',xa=x0,ya=y0,CCD2='n7',xb=x1,yb=y1,ina=in1,inb=in2,xadd=0,yadd=0)
-
-
-#---------match N4 and N7-----
-
-
-b0=pf.getdata(cat[7])
-b1=pf.getdata(cat[10])
-
-
-f0=b0.field('FLUX_BEST')
-f1=b1.field('FLUX_BEST')
-
-
-ok0=f0>np.mean(f0)
-ok1=f1>np.mean(f1)
-
-ra0=b0.field('X_WORLD')[ok0]
-dec0=b0.field('Y_WORLD')[ok0]
-ra1=b1.field('X_WORLD')[ok1]
-dec1=b1.field('Y_WORLD')[ok1]
-
-y0,x0=wcs2pix(ra0,dec0)
-y1,x1=wcs2pix(ra1,dec1)
-
-in1,in2=ccd_match(CCD1='n4',xa=x0,ya=y0,CCD2='n7',xb=x1,yb=y1,xadd=20,yadd=0,sep=80)
-ccd_match_offset(CCD1='n4',xa=x0,ya=y0,CCD2='n7',xb=x1,yb=y1,ina=in1,inb=in2,xadd=20,yadd=0)
-
-#---------match S4 and S5-----
-
-
-b0=pf.getdata(cat[11])
-b1=pf.getdata(cat[12])
-
-
-f0=b0.field('FLUX_BEST')
-f1=b1.field('FLUX_BEST')
-
-
-ok0=f0>np.mean(f0)
-ok1=f1>np.mean(f1)
-
-ra0=b0.field('X_WORLD')[ok0]
-dec0=b0.field('Y_WORLD')[ok0]
-ra1=b1.field('X_WORLD')[ok1]
-dec1=b1.field('Y_WORLD')[ok1]
-
-y0,x0=wcs2pix(ra0,dec0)
-y1,x1=wcs2pix(ra1,dec1)
-
-in1,in2=ccd_match(CCD1='s4',xa=x0,ya=y0,CCD2='s5',xb=x1,yb=y1,xadd=0,yadd=0,sep=80)
-ccd_match_offset(CCD1='s4',xa=x0,ya=y0,CCD2='s5',xb=x1,yb=y1,ina=in1,inb=in2,xadd=0,yadd=0)
-
-
+in1,in2=ccd_match(CCD1='s2',xa=x0,ya=y0,CCD2='s10',xb=x1,yb=y1,xadd=0,yadd=0,sep=90)
+ccd_match_check(CCD1='s2',xa=x0,ya=y0,CCD2='s10',xb=x1,yb=y1)
+
+l0,lerr0=offset(CCD1='s2',CCD2='s10',cat=cat,xadd=0,yadd=0,sep=80,crit_f=3)
+l1,lerr1=offset(CCD1='s10',CCD2='s2',cat=cat,xadd=0,yadd=0,sep=80,crit_f=3)
 
 
 
@@ -412,14 +161,14 @@ ccd_match_offset(CCD1='s4',xa=x0,ya=y0,CCD2='s5',xb=x1,yb=y1,ina=in1,inb=in2,xad
 #-----analyze the files---------------
 
 from fermiMCCD import *
-baseDir = '/data.02/flat_8_21_10/'
+baseDir='/home/jghao/research/ccd/imager/flatness_8_21_10/'
 cat=gl.glob(baseDir+'Image_*catalog.fits')
 cat.sort()
 
 
-l0,lerr0=offset(CCD1='s2',CCD2='s3',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
+l0,lerr0=offset(CCD1='s2',CCD2='s3',cat=cat,xadd=0,yadd=0,sep=70,crit_f=3)
 pl.savefig('/home/jghao/research/SPIE2010/fig/n4_n5_offset.pdf')
-l1,lerr1=offset(CCD1='n5',CCD2='n4',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
+l1,lerr1=offset(CCD1='n5',CCD2='n4',cat=cat,xadd=0,yadd=0,sep=70,crit_f=3)
 pl.savefig('/home/jghao/research/SPIE2010/fig/n5_n4_offset.pdf')
 (l0-l1)/2., (lerr0+lerr1)/2.
 
