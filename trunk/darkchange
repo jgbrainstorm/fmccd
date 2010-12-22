@@ -1,4 +1,10 @@
 #! /usr/bin/env python
+"""
+standalone code to calculate the mean dark current change between two images for a given number of extensions. The ccd file needs to be the standard DES ccd fits image with the convention of 1 extension corresponding to 2k x 4k with overscans on the sides.
+Created by: Jiangang Hao @ Fermilab, 12/15/2010 
+"""
+
+
 import sys
 if len(sys.argv) == 1:
     print 'syntax: darkchange refName newName'

@@ -1,4 +1,9 @@
 #! /usr/bin/env python
+"""
+standalone code to calculate the dark current for all extensions of the ccds images from imager. the ccd file needs to be the standard DES ccd fits image with the convention of 1 extension corresponding to 2k x 4k with overscans on the sides.
+Created by: Jiangang Hao @ Fermilab, 12/6/2010 
+"""
+
 import sys
 if len(sys.argv) == 1:
     print 'syntax: darkall imageName'
