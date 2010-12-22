@@ -533,61 +533,17 @@ l1,lerr1=offset(CCD1='s31',CCD2='n4',cat=cat,xadd=-250,yadd=270,sep=70,crit_f=10
 
 
 
+#----comparing with Greg's results---------
+
+baseDir='/home/jghao/research/ccd/imager/flatness_8_30_10/'
+cat=gl.glob(baseDir+'Image_*catalog.fits')
+cat.sort()
+
+l0,lerr0=offset(CCD1='s6',CCD2='s5',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
 
 
 
 
-
-
-"""
-
-x0,xerr0,y0,yerr0=offset(CCD1='n4',CCD2='n5',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-pl.savefig('/home/jghao/research/SPIE2010/fig/n4_n5_offset.pdf')
-x1,xerr1,y1,yerr1=offset(CCD1='n5',CCD2='n4',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-pl.savefig('/home/jghao/research/SPIE2010/fig/n5_n4_offset.pdf')
-(x0-x1)/2., (xerr0+xerr1)/2.,(y0-y1)/2., (yerr0+yerr1)/2.
-
-
-x0,xerr0,y0,yerr0=offset(CCD1='n4',CCD2='n6',cat=cat,xadd=0,yadd=-150,sep=70,crit_f=30)
-pl.savefig('/home/jghao/research/SPIE2010/fig/n4_n6_offset.pdf')
-x1,xerr1,y1,yerr1=offset(CCD1='n6',CCD2='n4',cat=cat,xadd=0,yadd=150,sep=70,crit_f=30)
-pl.savefig('/home/jghao/research/SPIE2010/fig/n6_n4_offset.pdf')
-(x0-x1)/2., (xerr0+xerr1)/2.,(y0-y1)/2., (yerr0+yerr1)/2.
-
-
-x0,xerr0,y0,yerr0=offset(CCD1='n5',CCD2='n6',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-pl.savefig('/home/jghao/research/SPIE2010/fig/n5_n6_offset.pdf')
-x1,xerr1,y1,yerr1=offset(CCD1='n6',CCD2='n5',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-pl.savefig('/home/jghao/research/SPIE2010/fig/n6_n5_offset.pdf')
-(x0-x1)/2., (xerr0+xerr1)/2.,(y0-y1)/2., (yerr0+yerr1)/2.
-
-
-
-x0,xerr0,y0,yerr0=offset(CCD1='n6',CCD2='n7',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-x1,xerr1,y1,yerr1=offset(CCD1='n7',CCD2='n6',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-(x0-x1)/2., (xerr0-xerr1)/2.,(y0-y1)/2., (yerr0-yerr1)/2.
-
-
-
-
-
-offset(CCD1='n5',CCD2='n7',cat=cat,xadd=0,yadd=0,sep=150,crit_f=30)
-offset(CCD1='n7',CCD2='n5',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-
-
-
-
-offset(CCD1='s4',CCD2='s5',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-
-offset(CCD1='s5',CCD2='s6',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-
-offset(CCD1='s4',CCD2='s6',cat=cat,xadd=0,yadd=-150,sep=70,crit_f=40)
-
-offset(CCD1='n6',CCD2='n4',cat=cat,xadd=0,yadd=150,sep=70,crit_f=0)
-
-offset(CCD1='n6',CCD2='n7',cat=cat,xadd=0,yadd=0,sep=70,crit_f=30)
-
-"""
 
 
 

@@ -7,22 +7,27 @@ else:
     import pylab as pl
     import pyfits as pf
     b=pf.getdata(sys.argv[1],int(sys.argv[2]))
+    hdr=pf.getheader(sys.argv[1],int(sys.argv[2]))
     noiseL=np.std(b[2000:2500,10:50])
     bins=np.unique(b[2000:2500,10:50])
     fig=pl.figure(figsize=(15,8))
     ax=fig.add_subplot(1,2,1)
-    pl.hist(b[2000:2500,10:50].flatten(),bins=bins,facecolor='green')
+    pl.hist(b[2000:2500,10:50].flatten(),bins=bins,facecolor='green',normed=True)
+    pl.ylim(0,0.3)
     pl.xlabel('Counts (ADU)')
     pl.text(0.2,0.8,'noise: '+str(np.round(noiseL,4))+'(ADU)',transform = ax.transAxes)
-    pl.title('Left: Noise')
+    pl.text(0.2,0.85,'Left Amp of ext: '+sys.argv[2],transform = ax.transAxes)
+    pl.title(hdr['detpos']+' Left: Noise')
     print '----- Left noise is: '+str(noiseL)+' -----'
     ax=fig.add_subplot(1,2,2)
     noiseR=np.std(b[2000:2500,2110:2150])
     bins=np.unique(b[2000:2500,2110:2150])
-    pl.hist(b[2000:2500,2110:2150].flatten(),bins=bins,facecolor='orange')
+    pl.hist(b[2000:2500,2110:2150].flatten(),bins=bins,facecolor='orange',normed=True)
+    pl.ylim(0,0.3)
     pl.xlabel('Counts (ADU)')
     pl.text(0.2,0.8,'noise: '+str(np.round(noiseR,4))+'(ADU)',transform = ax.transAxes)
-    pl.title('Right: Noise')
+    pl.text(0.2,0.85,'Right Amp of ext: '+sys.argv[2],transform = ax.transAxes)
+    pl.title(hdr['detpos']+' Right: Noise')
     print '----- Right noise is: '+str(noiseR)+' -----'
     pl.show()
     

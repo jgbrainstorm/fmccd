@@ -16,10 +16,10 @@ import glob as gl
 import os
 import sys
 import string
-#import scipy.optimize as op
+import scipy.optimize as op
 from fermiMCCD_def import *
-#import scipy.stats.kde as ke
-#from scipy.stats import kstest
+import scipy.stats.kde as ke
+from scipy.stats import kstest
 
 #----gaussfit-----------------
 
@@ -1191,7 +1191,6 @@ def ccd_offset(CCD1,CCD2):
         idx2=int(CCD2[1:])
         x2_target = N[idx2][1]
         y2_target = N[idx2][2]
-
     xoffset=x2_target - x1_target
     yoffset=y2_target - y1_target
     xoffset=xoffset*1000./15. #convert to pixel unit
@@ -1209,7 +1208,6 @@ def ccd_match(CCD1=None,xa=None,ya=None,CCD2=None,xb=None,yb=None,xadd=None,yadd
     """
     xoffset,yoffset=ccd_offset(CCD1,CCD2)
     in1,in2=xy_matching(xa,ya,xb-xoffset-xadd,yb-yoffset-yadd,sep=sep)
-
     return in1,in2
 
 
@@ -1244,7 +1242,6 @@ def match_analysis(xa=None,ya=None,xb=None,yb=None,ina=None,inb=None):
     pl.xlabel('y (ra) difference (pixels)')
     pl.text(0.1,0.9,'difference: '+str(round(robust_mean(ydff),5))+'+/-'+str(round(robust_std(ydff),5)),transform = ax.transAxes)   
     return 0
-
 
 
 def ccd_match_analysis(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None):
@@ -1516,43 +1513,55 @@ def ccd_match_offset_for_tilt(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=No
 
 def ccd2file(CCD):
     if CCD=='s1':
-        fileNo=27
+        fileNo=0
     if CCD=='s2':
-        fileNo=8
+        fileNo=1
     if CCD=='s3':
-        fileNo=9
+        fileNo=2
     if CCD=='s4':
-        fileNo=10
+        fileNo=3
     if CCD=='s5':
-        fileNo=11
+        fileNo=4
     if CCD=='s6':
-        fileNo=12
+        fileNo=5
     if CCD=='s7':
-        fileNo=13
+        fileNo=6
     if CCD=='n7':
-        fileNo=14
+        fileNo=7
     if CCD=='n6':
-        fileNo=15
+        fileNo=8
     if CCD=='n5':
-        fileNo=16
+        fileNo=9
     if CCD=='n4':
-        fileNo=17
+        fileNo=10
     if CCD=='n2':
-        fileNo=18
+        fileNo=11
     if CCD=='n1':
-        fileNo=19
+        fileNo=12
     if CCD=='s9':
-        fileNo=20
+        fileNo=13
     if CCD=='s10':
-        fileNo=21
+        fileNo=14
     if CCD=='s11':
-        fileNo=22
+        fileNo=15
     if CCD=='s12':
-        fileNo=23
+        fileNo=16
     if CCD=='s13':
-        fileNo=24
+        fileNo=17
     return fileNo
 
+
+def ccd_flux_threshold(cat=None,CCD=None,fluxth=None):
+    b0=pf.getdata(cat[ccd2file(CCD)])
+    f0=b0.field('FLUX_BEST')
+    if fluxth:
+        ok0=f0>fluxth
+    else:
+        ok0=f0>np.mean(f0)
+    ra0=b0.field('X_WORLD')[ok0]
+    dec0=b0.field('Y_WORLD')[ok0]
+    y0,x0=wcs2pix(ra0,dec0)
+    pl.plot(x0,y0,'bo')
 
 
 def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None):
@@ -1563,9 +1572,11 @@ def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None
     f0=b0.field('FLUX_BEST')
     f1=b1.field('FLUX_BEST')
 
-    ok0=f0>np.mean(f0)
-    ok1=f1>np.mean(f1)
-
+    #ok0=f0>np.mean(f0)
+    #ok1=f1>np.mean(f1)
+    ok0=f0>120000
+    ok1=f1>120000
+    
     ra0=b0.field('X_WORLD')[ok0]
     dec0=b0.field('Y_WORLD')[ok0]
     ra1=b1.field('X_WORLD')[ok1]
@@ -1581,6 +1592,34 @@ def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None
     return mean_ltan,stdm_ltan
 
 
+
+def ccd_match_check(cat=None,CCD1=None,CCD2=None):
+    b0=pf.getdata(cat[ccd2file(CCD1)])
+    b1=pf.getdata(cat[ccd2file(CCD2)])
+    f0=b0.field('FLUX_BEST')
+    f1=b1.field('FLUX_BEST')
+    #ok0=f0>np.mean(f0)
+    #ok1=f1>np.mean(f1)
+    ok0=f0>120000
+    ok1=f1>120000
+    
+    ra0=b0.field('X_WORLD')[ok0]
+    dec0=b0.field('Y_WORLD')[ok0]
+    ra1=b1.field('X_WORLD')[ok1]
+    dec1=b1.field('Y_WORLD')[ok1]
+    y0,x0=wcs2pix(ra0,dec0)
+    y1,x1=wcs2pix(ra1,dec1)
+    pl.subplot(2,2,1)
+    pl.plot(x0,y0,'bo')
+    pl.title(CCD1)
+    pl.subplot(2,2,2)
+    pl.plot(x1,y1,'bo')
+    pl.title(CCD2)
+    pl.subplot(2,2,3)
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)
+    pl.plot(x0,y0,'bo')
+    pl.plot(x1-xoffset,y1-yoffset,'r.')
+    pl.title(CCD2 +' moved to '+CCD1 )
 
 
 
@@ -1621,9 +1660,11 @@ def ccd_tilt(CCD=None,cat=None,fileNoa=None,fileNob=None,xadd=None,yadd=None,sep
     f0=b0.field('FLUX_BEST')
     f1=b1.field('FLUX_BEST')
 
-    ok0=f0>np.mean(f0)
-    ok1=f1>np.mean(f1)
-
+    #ok0=f0>np.mean(f0)
+    #ok1=f1>np.mean(f1)
+    ok0=f0>120000
+    ok1=f1>120000
+    
     ra0=b0.field('X_WORLD')[ok0]
     dec0=b0.field('Y_WORLD')[ok0]
     ra1=b1.field('X_WORLD')[ok1]
