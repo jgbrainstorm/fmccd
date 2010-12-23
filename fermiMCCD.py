@@ -16,10 +16,10 @@ import glob as gl
 import os
 import sys
 import string
-import scipy.optimize as op
+#import scipy.optimize as op
 from fermiMCCD_def import *
-import scipy.stats.kde as ke
-from scipy.stats import kstest
+#import scipy.stats.kde as ke
+#from scipy.stats import kstest
 
 #----gaussfit-----------------
 
@@ -353,6 +353,7 @@ def Img_sub(imageName=None,biasName=None,subName=None):
         imageHDU.writeto(subName)
     else:
         imageHDU=pf.open(imageName,mode='update')
+        imageHDU.verify('silentfix')
         NChannel = len(imageHDU)
         for i in range(1,NChannel):
             imageHDU[i].data=pf.getdata(imageName,i)-pf.getdata(biasName,i)
