@@ -16,22 +16,26 @@ else:
     nn=len(hdu)
     darkref=[]
     darknew=[]
-    ext=[2,3,4,5,8,37,38,39,40,41,42,43,44,52,57,59,61]
-
+    #ext=[2,3,4,5,8,37,38,39,40,41,42,43,44,52,57,59,61]
+    ext=np.arange(1,nn,1)
     for i in ext:
         b=pf.getdata(sys.argv[1],i)
         hdr=pf.getheader(sys.argv[1],i)
         darkL=np.mean(b[1500:2000,400:440])-np.mean(b[1500:2000,10:50])
         darkR=np.mean(b[1500:2000,1400:1440])-np.mean(b[1500:2000,2110:2150])
-        darkref.append(darkL)
-        darkref.append(darkR)
+        if np.mean(b[1500:2000,10:50]) != 0:
+            darkref.append(darkL)
+        if np.mean(b[1500:2000,2110:2150]) != 0:
+            darkref.append(darkR)
     for i in ext:
         b=pf.getdata(sys.argv[2],i)
         hdr=pf.getheader(sys.argv[2],i)
         darkL=np.mean(b[1500:2000,400:440])-np.mean(b[1500:2000,10:50])
         darkR=np.mean(b[1500:2000,1400:1440])-np.mean(b[1500:2000,2110:2150])
-        darknew.append(darkL)
-        darknew.append(darkR)
+        if np.mean(b[1500:2000,10:50]) != 0:
+            darknew.append(darkL)
+        if np.mean(b[1500:2000,2110:2150]) != 0:
+            darknew.append(darkR)
     new=np.array(darknew)
     ref=np.array(darkref)
     change=(new-ref)/ref
