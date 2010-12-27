@@ -19,7 +19,7 @@ import string
 #import scipy.optimize as op
 from fermiMCCD_def import *
 #import scipy.stats.kde as ke
-from scipy.stats import kstest
+#from scipy.stats import kstest
 
 #----gaussfit-----------------
 
@@ -32,32 +32,46 @@ def kde(x=None,range=None):
 #-----Robust Mean--------------
 def robust_mean(x):
     y = x.flatten()
-    n = len(y)
-    y.sort()
-    ind_qt1 = round((n+1)/4.)
-    ind_qt3 = round((n+1)*3/4.)
-    IQR = y[ind_qt3]- y[ind_qt1]
-    lowFense = y[ind_qt1] - 1.5*IQR
-    highFense = y[ind_qt3] + 1.5*IQR
-    ok = (y>lowFense)*(y<highFense)
-    yy=y[ok]
-    return yy.mean(dtype='double')
+    if len(np.unique(y))==1:
+        meany=y[0]
+    else:
+        n = len(y)
+        y.sort()
+        ind_qt1 = round((n+1)/4.)
+        ind_qt3 = round((n+1)*3/4.)
+        IQR = y[ind_qt3]- y[ind_qt1]
+        lowFense = y[ind_qt1] - 1.5*IQR
+        highFense = y[ind_qt3] + 1.5*IQR
+        if lowFense == highFense:
+            meany=lowFense
+        else:
+            ok = (y>lowFense)*(y<highFense)
+            yy=y[ok]
+            meany=yy.mean(dtype='double')
+    return meany
 
 
 #-------Robust Standard Deviation---
 
 def robust_std(x):
     y = x.flatten()
-    n = len(y)
-    y.sort()
-    ind_qt1 = round((n+1)/4.)
-    ind_qt3 = round((n+1)*3/4.)
-    IQR = y[ind_qt3]- y[ind_qt1]
-    lowFense = y[ind_qt1] - 1.5*IQR
-    highFense = y[ind_qt3] + 1.5*IQR
-    ok = (y>lowFense)*(y<highFense)
-    yy=y[ok]
-    return yy.std(dtype='double')
+    if len(np.unique(y))==0:
+        stdy=0.
+    else:
+        n = len(y)
+        y.sort()
+        ind_qt1 = round((n+1)/4.)
+        ind_qt3 = round((n+1)*3/4.)
+        IQR = y[ind_qt3]- y[ind_qt1]
+        lowFense = y[ind_qt1] - 1.5*IQR
+        highFense = y[ind_qt3] + 1.5*IQR
+        if lowFense == highFense:
+            stdy=lowFense
+        else:
+            ok = (y>lowFense)*(y<highFense)
+            yy=y[ok]
+            stdy=yy.std(dtype='double')
+    return stdy
 
 #-------weighted mean, std--------
 def wmean(x,xerr):
@@ -78,16 +92,23 @@ def wsd(x,xerr):
 
 def robust_var(x):
     y = x.flatten()
-    n = len(y)
-    y.sort()
-    ind_qt1 = round((n+1)/4.)
-    ind_qt3 = round((n+1)*3/4.)
-    IQR = y[ind_qt3]- y[ind_qt1]
-    lowFense = y[ind_qt1] - 1.5*IQR
-    highFense = y[ind_qt3] + 1.5*IQR
-    ok = (y>lowFense)*(y<highFense)
-    yy=y[ok]
-    return yy.var(dtype='double')
+    if len(np.unique(y))==0:
+        vary=0.
+    else:
+        n = len(y)
+        y.sort()
+        ind_qt1 = round((n+1)/4.)
+        ind_qt3 = round((n+1)*3/4.)
+        IQR = y[ind_qt3]- y[ind_qt1]
+        lowFense = y[ind_qt1] - 1.5*IQR
+        highFense = y[ind_qt3] + 1.5*IQR
+        if lowFense == highFense:
+            vary=lowFense
+        else:
+            ok = (y>lowFense)*(y<highFense)
+            yy=y[ok]
+            vary=yy.var(dtype='double')
+    return vary
 
 
 #--------some binned plots-----
@@ -455,23 +476,32 @@ def image_reduction(dir=None,biasName=None):
 def linearity(NameFits,NameBias,Channel,shift=None,left=None):
 
     if left == None or left == 1:
-        colmin=150
-        colmax=350
-        rowmin=200 #lower
-        rowmax=500
+        #colmin=150
+        #colmax=350
+        colmin=300
+        colmax=800
+        #rowmin=200 #lower
+        #rowmax=500
         #xmin=2000 #middle
         #xmax=2500    
         #xmin=3600 #upper
         #xmax=4000
+        rowmin=100  #new region
+        rowmax=200
     else:
+        #colmin=1300
+        #colmax=1750
         colmin=1300
-        colmax=1750
-        rowmin=200
-        rowmax=500
+        colmax=1800
+        #rowmin=200
+        #rowmax=500
+        rowmin=100
+        rowmax=200
     #the following change is due to the bad part on the new CCD mounted 4/15/2010.
-    if Channel == 17:
-        rowmin=2000
-        rowmax=2500
+    detector = pf.open(NameBias)[Channel].header['DETSER']
+    if detector[-1]=='N':
+        rowmin=3946
+        rowmax=4046
        
     if shift == 1:
         colshift = np.random.random_integers(0,500,1)
@@ -485,8 +515,9 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
     mean_b = np.zeros(num)
     var_b = np.zeros(num)
     exptime=np.zeros(num)
+    #exptime=np.arange(5,130,5)
     #exptime=np.append(np.arange(0,0.4,0.04),np.arange(0.02,0.46,0.04))
-    detector = pf.open(NameBias)[Channel].header['DETSER']
+    
     for i in range(0,num):
         bias,biashdr = readCCDFits(NameBias,Channel)
         bias = bias[rowmin:rowmax,colmin:colmax]
@@ -501,7 +532,8 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         diff_b= ba - bb
         mean_b[i] = robust_mean(add_b)/2.
         var_b[i] = robust_var(diff_b)/2.
-        exptime[i]=pf.open(NameFits[i*2])[0].header['exptime']        
+        exptime[i]=pf.open(NameFits[i*2])[0].header['EXPTIME']        
+        #exptime[i]=i*5
         ok = (mean_b > 0)*(mean_b <20000)*(var_b < 8000)          
         if len(mean_b[ok]) > 2:
             (a,b,SEa,SEb,R2) = linefit(mean_b[ok],var_b[ok])
@@ -813,7 +845,7 @@ def xtalk(imageHDU=None,sourceCH=None,victimCH=None,winSg=None,winBg=None,NamePn
     ss=sso.reshape(sso.shape[0]*sso.shape[1])
     vv=vvo.reshape(vvo.shape[0]*vvo.shape[1])
 
-    idd = (ss > 10000)*(ss < 65000)
+    idd = (ss > 35000)*(ss < 65000)
     ss=ss[idd]
     vv=vv[idd]
     vverr = np.sqrt(np.abs(vv))
@@ -928,7 +960,7 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
     ss=sso.reshape(sso.shape[0]*sso.shape[1])
     vv=vvo.reshape(vvo.shape[0]*vvo.shape[1])
 
-    idd = (ss > 10000)*(ss < 65000)
+    idd = (ss > 35000)*(ss < 65000)
     ss=ss[idd]
     vv=vv[idd]
     #(a,b,SEa,SEb,chi2)=binlinfit(ss,vv,2000)
@@ -948,7 +980,7 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
     pl.plot(sso,vvo,'b.')
     #bin_scatter(ss,vv,binsize=2000)
     pl.plot(np.array([10000,65000]),np.array([10000,65000])*b+a,'r-')
-    pl.vlines(10000,-100,100,color='green',linestyles='dashed')
+    pl.vlines(35000,-100,100,color='green',linestyles='dashed')
     pl.xlabel('Source (ADU)')
     pl.ylabel('Victim (ADU)')
     pl.title('Xtalk Coefficient:'+str(np.round(b,7))+'$\pm$'+str(np.round(SEb,7))+'('+str(round(chi2,1))+')')
@@ -963,6 +995,84 @@ def xcoeff(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=
         pl.show()
     
     return(b)
+
+
+def xcoeff_hist(imgNumber=None,source=None,victim=None,winSg=None,winBg=None,NamePng=None):
+
+    rowmin = winSg[0]
+    rowmax = winSg[1]
+    colmin = winSg[2]
+    colmax = winSg[3]
+
+    rowminBg = winBg[0]
+    rowmaxBg = winBg[1]   
+    colminBg = winBg[2]    # for background substraction
+    colmaxBg = winBg[3]
+    
+    lefts = np.mod(source.ext,2)
+    leftv = np.mod(victim.ext,2)
+    source.loaddata(imgNumber)
+    victim.loaddata(imgNumber)
+    imgS = source.data
+    bgimgS = np.median(source.data[rowminBg:rowmaxBg,colminBg:colmaxBg])
+    imgS = imgS[rowmin:rowmax,colmin:colmax] - bgimgS
+
+    imgV = victim.data
+    
+    if lefts != leftv:
+        imgV = reflectImg(imgV,col=1)
+        
+    bgimgV = np.median(victim.data[rowminBg:rowmaxBg,colminBg:colmaxBg])
+    imgV = imgV[rowmin:rowmax,colmin:colmax] - bgimgV
+    
+    sso = imgS
+    vvo = imgV
+    
+    ss=sso.reshape(sso.shape[0]*sso.shape[1])
+    vv=vvo.reshape(vvo.shape[0]*vvo.shape[1])
+
+    idd = (ss > 35000)*(ss < 65000)
+    if(len(np.unique(ss[idd])) > 10)*(len(np.unique(vv[idd])) > 5):
+        ss=ss[idd]
+        vv=vv[idd]
+        xcof=vv*1./ss
+        b=robust_mean(xcof)
+        pl.figure(figsize=(15, 10))
+        pl.subplot(2,2,1)
+        pl.imshow(sso,origin='lower')
+        pl.title('Source: '+source.pos)
+        pl.subplot(2,2,2)
+        pl.imshow(vvo,origin='lower')
+        pl.title('Victim: '+victim.pos)
+        pl.subplot(2,2,3)
+        pl.hold(True)
+        pl.boxplot(xcof)
+        pl.title('Xtalk Coefficient:'+str(np.round(b,7))+'$\pm$'+str(np.round(robust_std(xcof),7)))
+        b=np.round(b,7)
+        pl.subplot(2,2,4)
+        pl.imshow(vvo-b*sso,origin='lower')
+        pl.title('Corrected Victim '+victim.pos)
+        if NamePng != None:
+            pl.savefig(NamePng+'xtalk_'+source.pos+'_'+victim.pos+'.png')
+            pl.close()
+        else:
+            pl.show()
+    else:
+        pl.figure(figsize=(15, 10))
+        pl.subplot(2,2,1)
+        pl.imshow(sso,origin='lower')
+        pl.title('Source: '+source.pos)
+        pl.subplot(2,2,2)
+        pl.imshow(vvo,origin='lower')
+        pl.title('Victim: '+victim.pos)
+        b=0
+        if NamePng != None:
+            pl.savefig(NamePng+'xtalk_'+source.pos+'_'+victim.pos+'.png')
+            pl.close()
+        else:
+            pl.show()
+    return(b)
+
 
 #-------sextractor -------------------
 
@@ -1081,7 +1191,6 @@ def ccd_offset(CCD1,CCD2):
         idx2=int(CCD2[1:])
         x2_target = N[idx2][1]
         y2_target = N[idx2][2]
-
     xoffset=x2_target - x1_target
     yoffset=y2_target - y1_target
     xoffset=xoffset*1000./15. #convert to pixel unit
@@ -1099,7 +1208,6 @@ def ccd_match(CCD1=None,xa=None,ya=None,CCD2=None,xb=None,yb=None,xadd=None,yadd
     """
     xoffset,yoffset=ccd_offset(CCD1,CCD2)
     in1,in2=xy_matching(xa,ya,xb-xoffset-xadd,yb-yoffset-yadd,sep=sep)
-
     return in1,in2
 
 
@@ -1134,7 +1242,6 @@ def match_analysis(xa=None,ya=None,xb=None,yb=None,ina=None,inb=None):
     pl.xlabel('y (ra) difference (pixels)')
     pl.text(0.1,0.9,'difference: '+str(round(robust_mean(ydff),5))+'+/-'+str(round(robust_std(ydff),5)),transform = ax.transAxes)   
     return 0
-
 
 
 def ccd_match_analysis(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None):
@@ -1406,43 +1513,55 @@ def ccd_match_offset_for_tilt(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=No
 
 def ccd2file(CCD):
     if CCD=='s1':
-        fileNo=27
+        fileNo=0
     if CCD=='s2':
-        fileNo=8
+        fileNo=1
     if CCD=='s3':
-        fileNo=9
+        fileNo=2
     if CCD=='s4':
-        fileNo=10
+        fileNo=3
     if CCD=='s5':
-        fileNo=11
+        fileNo=4
     if CCD=='s6':
-        fileNo=12
+        fileNo=5
     if CCD=='s7':
-        fileNo=13
+        fileNo=6
     if CCD=='n7':
-        fileNo=14
+        fileNo=7
     if CCD=='n6':
-        fileNo=15
+        fileNo=8
     if CCD=='n5':
-        fileNo=16
+        fileNo=9
     if CCD=='n4':
-        fileNo=17
+        fileNo=10
     if CCD=='n2':
-        fileNo=18
+        fileNo=11
     if CCD=='n1':
-        fileNo=19
+        fileNo=12
     if CCD=='s9':
-        fileNo=20
+        fileNo=13
     if CCD=='s10':
-        fileNo=21
+        fileNo=14
     if CCD=='s11':
-        fileNo=22
+        fileNo=15
     if CCD=='s12':
-        fileNo=23
+        fileNo=16
     if CCD=='s13':
-        fileNo=24
+        fileNo=17
     return fileNo
 
+
+def ccd_flux_threshold(cat=None,CCD=None,fluxth=None):
+    b0=pf.getdata(cat[ccd2file(CCD)])
+    f0=b0.field('FLUX_BEST')
+    if fluxth:
+        ok0=f0>fluxth
+    else:
+        ok0=f0>np.mean(f0)
+    ra0=b0.field('X_WORLD')[ok0]
+    dec0=b0.field('Y_WORLD')[ok0]
+    y0,x0=wcs2pix(ra0,dec0)
+    pl.plot(x0,y0,'bo')
 
 
 def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None):
@@ -1453,9 +1572,11 @@ def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None
     f0=b0.field('FLUX_BEST')
     f1=b1.field('FLUX_BEST')
 
-    ok0=f0>np.mean(f0)
-    ok1=f1>np.mean(f1)
-
+    #ok0=f0>np.mean(f0)
+    #ok1=f1>np.mean(f1)
+    ok0=f0>120000
+    ok1=f1>120000
+    
     ra0=b0.field('X_WORLD')[ok0]
     dec0=b0.field('Y_WORLD')[ok0]
     ra1=b1.field('X_WORLD')[ok1]
@@ -1471,6 +1592,34 @@ def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None
     return mean_ltan,stdm_ltan
 
 
+
+def ccd_match_check(cat=None,CCD1=None,CCD2=None):
+    b0=pf.getdata(cat[ccd2file(CCD1)])
+    b1=pf.getdata(cat[ccd2file(CCD2)])
+    f0=b0.field('FLUX_BEST')
+    f1=b1.field('FLUX_BEST')
+    #ok0=f0>np.mean(f0)
+    #ok1=f1>np.mean(f1)
+    ok0=f0>120000
+    ok1=f1>120000
+    
+    ra0=b0.field('X_WORLD')[ok0]
+    dec0=b0.field('Y_WORLD')[ok0]
+    ra1=b1.field('X_WORLD')[ok1]
+    dec1=b1.field('Y_WORLD')[ok1]
+    y0,x0=wcs2pix(ra0,dec0)
+    y1,x1=wcs2pix(ra1,dec1)
+    pl.subplot(2,2,1)
+    pl.plot(x0,y0,'bo')
+    pl.title(CCD1)
+    pl.subplot(2,2,2)
+    pl.plot(x1,y1,'bo')
+    pl.title(CCD2)
+    pl.subplot(2,2,3)
+    xoffset,yoffset=ccd_offset(CCD1,CCD2)
+    pl.plot(x0,y0,'bo')
+    pl.plot(x1-xoffset,y1-yoffset,'r.')
+    pl.title(CCD2 +' moved to '+CCD1 )
 
 
 
@@ -1511,9 +1660,11 @@ def ccd_tilt(CCD=None,cat=None,fileNoa=None,fileNob=None,xadd=None,yadd=None,sep
     f0=b0.field('FLUX_BEST')
     f1=b1.field('FLUX_BEST')
 
-    ok0=f0>np.mean(f0)
-    ok1=f1>np.mean(f1)
-
+    #ok0=f0>np.mean(f0)
+    #ok1=f1>np.mean(f1)
+    ok0=f0>120000
+    ok1=f1>120000
+    
     ra0=b0.field('X_WORLD')[ok0]
     dec0=b0.field('Y_WORLD')[ok0]
     ra1=b1.field('X_WORLD')[ok1]
