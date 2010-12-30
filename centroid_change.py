@@ -5,7 +5,7 @@ import scipy.ndimage as nd
 import pylab as pl
 import sys
 
-ext=
+
 def getxy(datas):
     ok=datas>=datas.mean()+datas.std()
     good=nd.binary_opening(ok,structure=np.ones((30,30)))    
@@ -20,19 +20,11 @@ def getxy(datas):
 if len(sys.argv) == 1:
     print 'syntax: centroid_pos imageName1 imageName2'
 else:
-    data1,hdr1=pf.getdata(sys.argv[1],int(sys.argv[3]),header=True)
-    pl.figure(figsize=(14,9))
-    pl.subplot(2,2,1)
-    x1,y1=getxy(data1,sys.argv[1]+'['+sys.argv[3]+']')
-    pl.subplot(2,2,2)
-    data2=pf.getdata(sys.argv[2],int(sys.argv[3]))
-    x2,y2=getxy(data2,sys.argv[2]+'['+sys.argv[3]+']')
-    pl.subplot(2,2,3)
-    pl.plot(x1,x1-x2,'bo')
-    pl.xlabel('x1')
-    pl.ylabel('x1-x2')
-    pl.subplot(2,2,4)
-    pl.plot(y1,y1-y2,'bo')
-    pl.xlabel('y1')
-    pl.ylabel('y1-y2')
-    pl.show()
+    ext=[2,19,20,21,37,38,43,44,59,60]
+    for i in ext:
+        data1,hdr1=pf.getdata(sys.argv[1],i,header=True)
+        x1,y1=getxy(data1,sys.argv[1]+'['+sys.argv[3]+']')
+        data2,hdr2=pf.getdata(sys.argv[2],i,header=True)
+        x2,y2=getxy(data2,sys.argv[2]+'['+sys.argv[3]+']')
+        sep=np.sqrt((x1-x2)**2+(y1-y2)**2)
+        print hdr1['detpos'],'--x1--',x1,'--y1--',y1,'--x2--',x2,'--y2--',y2,'--sep--',sep
