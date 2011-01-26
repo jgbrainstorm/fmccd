@@ -1,0 +1,17 @@
+#! /usr/bin/env python
+import numpy as np
+import pyfits as pf
+import sys
+
+nimg=len(sys.argv)-1
+hdu=pf.open(sys.argv[1])
+hdu.verify('silentfix')
+nExt=len(hdu)
+
+for i in range(1,nExt):
+    for j in range(1,nimg+1):
+        b=[]
+        b.append(pf.getdata(sys.argv[j],i))
+    hdu[i].data=np.median(b,axis=0)
+    hdu[i].scale('int16','',bzero=32768)
+hdu.writeto('median.fits')

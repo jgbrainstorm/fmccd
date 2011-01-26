@@ -7,7 +7,7 @@ import sys
 
 
 def getxy(datas):
-    ok=datas>=datas.mean()+datas.std()
+    ok=datas>=datas.mean()+1.5*datas.std()
     good=nd.binary_opening(ok,structure=np.ones((30,30)))    
     datagood=datas*good
     structuring_element=np.ones((3,3))

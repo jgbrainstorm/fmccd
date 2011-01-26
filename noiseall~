@@ -13,8 +13,6 @@ else:
     import pyfits as pf
     hdu=pf.open(sys.argv[1])
     nn=len(hdu)
-    ccd=[]
-    noise=[]
     print '----extension----Position----noiseL (ADU)---minL ---maxL----noiseR (ADU)---minR ---maxR'
     for i in np.arange(1,nn,1):
         b=pf.getdata(sys.argv[1],i)
@@ -25,18 +23,8 @@ else:
         maxL=np.max(b[100:4000,1035:1060])
         minR=np.min(b[100:4000,1085:1100])
         maxR=np.max(b[100:4000,1085:1100])
-        ccd.append(hdr['detpos']+'_L')
-        ccd.append(hdr['detpos']+'_R')
-        noise.append(noiseL)
-        noise.append(noiseR)
         print i,'--',hdr['detpos'],'---',noiseL,'----',minL,'----',maxL,'----',noiseR,'----',minR,'----',maxR,'----'
 
-noise=np.array(noise)
-f = open('noise.txt', 'w')
-for j in range(len(ccd)):
-    f.write(ccd[j]+'   '+str(round(noise[j],4))+'\n')
-f.close()
         
-print '---- noise analysis complete ----'
 
     
