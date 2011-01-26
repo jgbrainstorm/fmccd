@@ -182,7 +182,7 @@ See NR chapter 15
 """
 
 def linfit(xx,yy,yyerr):
-    if len(yy[np.abs(yy)>0]) < 10:
+    if len(yy[np.abs(yy)>0]) < 2:
         b=0
         a=0
         SEa=0
@@ -499,7 +499,8 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         rowmin=100
         rowmax=200
     #the following change is due to the bad part on the new CCD mounted 4/15/2010.
-    detector = pf.open(NameBias)[Channel].header['DETSER']
+    #detector = pf.open(NameBias)[Channel].header['DETSER']
+    detector = pf.open(NameBias)[Channel].header['DETPOS']
     if detector[-1]=='N':
         rowmin=3946
         rowmax=4046
@@ -581,15 +582,16 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
     pl.ylim(-0.05,0.05)
     pl.xlim(min(exptime),max(exptime))
     pl.xlabel('Exposure time (sec)')
-    pl.ylabel('Relative deviation from the fitted line')    
-    pl.text(0.1,0.9,'Fullwell:'+str(round(ffw))+' (ADU)',transform = ax.transAxes)
-    pl.text(0.1,0.85,'Fullwell:'+str(round(ffw/gain))+' (e-)',transform = ax.transAxes) 
+    pl.ylabel('Relative deviation from the fitted line')
+    if type(ffw)==float:
+        pl.text(0.1,0.9,'Fullwell:'+str(round(ffw))+' (ADU)',transform = ax.transAxes)
+        pl.text(0.1,0.85,'Fullwell:'+str(round(ffw/gain))+' (e-)',transform = ax.transAxes) 
     ax=fig.add_subplot(2,2,3)
     pl.plot(mean_b,var_b,'bo')
     pl.xlim(0,60000)
     pl.hold(True)
     pl.plot(np.array([0,36000]),np.array([0,36000])*b+a,'r-')
-    pl.text(0.1,0.9,'Gain:'+str(round(np.mean(gain),5))+'$\pm$'+str(round(np.mean(SEb),5)),transform = ax.transAxes)
+    pl.text(0.1,0.9,'Gain:'+str(round(gain,5))+'$\pm$'+str(round(np.mean(SEb),5)),transform = ax.transAxes)
     pl.ylim(-1,18000)
     pl.xlim(-1,60000)
     pl.xlabel('Bias subtracted mean counts (ADU)')
@@ -614,7 +616,7 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
     pl.text(0.1,0.85,'Fullwell:'+str(round(fw/gain))+' (e-)',transform = ax.transAxes)
     pl.xlabel('Bias subtracted mean counts (ADU)')
     pl.ylabel('Relative deviation from the fitted line')    
-
+    return gain,fw
 
 
    

@@ -26,7 +26,7 @@ def getxy(data,title=None):
 if len(sys.argv) == 1:
     print 'syntax: centroid_pos imageName1 imageName2 extension'
 else:
-    data1,hdr1=pf.getdata(sys.argv[1],int(sys.argv[3]),header=True)
+    data1=pf.getdata(sys.argv[1],int(sys.argv[3]))
     pl.figure(figsize=(14,9))
     pl.subplot(2,2,1)
     x1,y1=getxy(data1,sys.argv[1]+'['+sys.argv[3]+']')
@@ -41,6 +41,5 @@ else:
     pl.plot(y1,y1-y2,'bo')
     pl.xlabel('y1')
     pl.ylabel('y1-y2')
-    sep=np.sqrt((x1-x2)**2+(y1-y2)**2)
-    print hdr1['detpos']+': '+str(np.round(sep,3))
+    
     pl.show()
