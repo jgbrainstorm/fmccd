@@ -504,7 +504,9 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
     if detector[-1]=='N':
         rowmin=3946
         rowmax=4046
-       
+    if detector[0]=='F':
+        rowmin=100
+        rowmax=200
     if shift == 1:
         colshift = np.random.random_integers(0,500,1)
         rowshift = np.random.random_integers(0,3000,1)

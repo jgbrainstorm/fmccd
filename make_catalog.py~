@@ -2,9 +2,11 @@
 import sys
 sys.path.append('/home/jghao/fmccd')
 from fermiMCCD import *
-ext=np.array([2,3,5,41,42,38,39,8,19,20,21])
+ext=np.array([3,41,42,38,39,19,20,21,43,22])
 
-catdir='/data/10Jan2011_0deg/hexpodmove_tilt/'
+#catdir='/data/10Jan2011_0deg/hexpodmove_tilt/'
+catdir='/data/jiangang/zenith/hexpod_tilt/'
+#ext=np.array([8,19,20,3,42,37])
 NameFits=gl.glob(catdir+'*.fits')
 Nfits=len(NameFits)
 for i in range(Nfits):

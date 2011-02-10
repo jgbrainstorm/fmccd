@@ -31,12 +31,12 @@ else:
         noise.append(noiseR)
         print i,'--',hdr['detpos'],'---',noiseL,'----',minL,'----',maxL,'----',noiseR,'----',minR,'----',maxR,'----'
 
-noise=np.array(noise)
-f = open('noise.txt', 'w')
-for j in range(len(ccd)):
-    f.write(ccd[j]+'   '+str(round(noise[j],4))+'\n')
-f.close()
+    noise=np.array(noise)
+    f = open('noise.txt', 'w')
+    for j in range(len(ccd)):
+        f.write(ccd[j]+'   '+str(round(noise[j],4))+'\n')
+    f.close()
         
-print '---- noise analysis complete ----'
+    print '---- noise analysis complete ----'
 
     

@@ -4,17 +4,18 @@ sys.path.append('/home/jghao/fmccd')
 from fermiMCCD import *
 ext=np.array([2,3,5,41,42,38,39,8,19,20,21])
 
-catdir='/data/10Jan2011_0deg/hexpodmove/catalog/'
 
+#catdir='/data/10Jan2011_0deg/hexpodmove/catalog/'
+catdir='/data/jiangang/zenith/hexpod_move/catalog/'
 
 for k in ext:
     CatFits=gl.glob(catdir+'*_exten_'+str(k)+'_*.fits')
     CatFits.sort()
     Nfits=len(CatFits)
     for i in range(Nfits):
-        x0=pf.getdata(CatFits[0]).field('x_image')
-        y0=pf.getdata(CatFits[0]).field('y_image')
-        flux=pf.getdata(CatFits[0]).field('flux_best')
+        x0=pf.getdata(CatFits[19]).field('x_image')
+        y0=pf.getdata(CatFits[19]).field('y_image')
+        flux=pf.getdata(CatFits[19]).field('flux_best')
         ok=flux>np.mean(flux)
         x0=x0[ok]
         y0=y0[ok]
@@ -22,7 +23,7 @@ for k in ext:
     Mydiff=[]
     SDxdiff=[]
     SDydiff=[]
-    for j in range(1,len(CatFits)):
+    for j in range(20,len(CatFits)):
         x1=pf.getdata(CatFits[j]).field('x_image')
         y1=pf.getdata(CatFits[j]).field('y_image')
         i0,i1=xy_matching(xa=x0,ya=y0,xb=x1,yb=y1,sep=20)
@@ -55,5 +56,6 @@ for k in ext:
     pl.text(0.2,0.85,'slope: '+str(round(bx,3))+r'$\pm$'+str(round(SEbx,3)),transform = ax.transAxes)
     pl.text(0.2,0.8,'Itcpt: '+str(round(aax,3))+r'$\pm$'+str(round(SEax,3)),transform = ax.transAxes)
     pl.ylim(-30,30)
-    pl.savefig('hexmove_x_ext_'+str(k)+'.png')
+    pl.title('zenith position')
+    pl.savefig('hexmove_zenith_x_ext_'+str(k)+'.png')
     pl.close()
