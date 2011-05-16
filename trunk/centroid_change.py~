@@ -20,8 +20,8 @@ def getxy(datas):
 if len(sys.argv) == 1:
     print 'syntax: centroid_pos imageName1 imageName2'
 else:
-    #ext=[2,19,20,21,37,38,43,44,59,60]
-    ext=[2,37,41]
+    ext=[2,3,4,5,19,20,21,37,38,39,41,42,43,47,48,49,52,45]
+    #ext=[2,37,41]
     print '------'+sys.argv[1]+' vs. '+sys.argv[2]+'----'
     print 'CCD Position------dot change in pixels'
     for i in ext:
@@ -30,4 +30,6 @@ else:
         data2,hdr2=pf.getdata(sys.argv[2],i,header=True)
         x2,y2=getxy(data2)
         sep=np.sqrt((x1-x2)**2+(y1-y2)**2)
-        print hdr1['detpos']+': '+str(np.round(sep,3))
+        print hdr1['detpos']+' x2-x1 :'+str(np.round(x2-x1,3))
+        print hdr1['detpos']+' y2-y1 :'+str(np.round(y2-y1,3))
+        print hdr1['detpos']+' separation: '+str(np.round(sep,3))

@@ -86,6 +86,15 @@ def wsd(x,xerr):
     return(ws)
 
 
+def varcol(x):
+    varr=np.var(x,axis=0)
+    varr=np.mean(varr)
+    return(varr)
+
+def varrow(x):
+    varr-np.var(x,axis=1)
+    varr=np.mean(varr)
+    return(varr)
 
 
 #-------Robust variance---
@@ -515,13 +524,10 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         colmin = colmin + colshift
         colmax = colmax + colshift
     NFile = len(NameFits)
-    num = round((NFile-1)/2.)
+    num = int(round((NFile-1)/2.))
     mean_b = np.zeros(num)
     var_b = np.zeros(num)
     exptime=np.zeros(num)
-    #exptime=np.arange(5,130,5)
-    #exptime=np.append(np.arange(0,0.4,0.04),np.arange(0.02,0.46,0.04))
-    
     for i in range(0,num):
         bias,biashdr = readCCDFits(NameBias,Channel)
         bias = bias[rowmin:rowmax,colmin:colmax]
@@ -536,25 +542,28 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         diff_b= ba - bb
         mean_b[i] = robust_mean(add_b)/2.
         var_b[i] = robust_var(diff_b)/2.
-        exptime[i]=pf.open(NameFits[i*2])[0].header['EXPTIME']        
-        #exptime[i]=i*5
-        ok = (mean_b > 0)*(mean_b <20000)*(var_b < 8000)          
-        if len(mean_b[ok]) > 2:
-            (a,b,SEa,SEb,R2) = linefit(mean_b[ok],var_b[ok])
-            gain = b
-            (ta,tb,tSEa,tSEb,tR2) = linefit(exptime[ok],mean_b[ok])           
-        else:
-            gain=999
-            a=0
-            b=0
-            SEb=999
-            ta=0
-            tb=0
-            tSEa=999
-            tSEb=999
+        exptime[i]=pf.open(NameFits[i*2])[0].header['expreq']        
+        #exptime[i]=0
+    sidx=np.argsort(exptime)
+    exptime=exptime[sidx]
+    mean_b=mean_b[sidx]
+    var_b=var_b[sidx]
+    ok = (mean_b > 0)*(mean_b <20000)*(var_b < 8000)          
+    if len(mean_b[ok]) > 2:
+        (a,b,SEa,SEb,R2) = linefit(mean_b[ok],var_b[ok])
+        gain = b
+        (ta,tb,tSEa,tSEb,tR2) = linefit(exptime[ok],mean_b[ok])           
+    else:
+        gain=999
+        a=0
+        b=0
+        SEb=999
+        ta=0
+        tb=0
+        tSEa=999
+        tSEb=999
         
     fig=pl.figure(figsize=(15,15))
-    #pl.subplot(2,2,1)
     ax=fig.add_subplot(2,2,1)
     pl.plot(exptime,mean_b,'bo')
     pl.hold(True)
@@ -569,9 +578,10 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         pl.title('Position:' +detector+'     Channel: '+str(Channel)+' right')
     ax=fig.add_subplot(2,2,2)
     dff=(mean_b-(tb*exptime+ta))/(tb*exptime+ta)
-    uuu=mean_b[abs(dff) <= 0.01]
+    uuu=mean_b[(abs(dff) > 0.01)*(mean_b > 10000.)]
     if uuu.any() == True:
-        ffwid=mean_b==max(uuu)
+        ffwid=np.argwhere(mean_b==min(uuu))[0][0]
+        ffwid=ffwid-1
         ffw=mean_b[ffwid]
     else:
         ffw=999
@@ -600,12 +610,13 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
     pl.ylabel('Variance (ADU)')
     ax=fig.add_subplot(2,2,4)
     diff=(var_b-(b*mean_b+a))/(b*mean_b+a)
-    uu=mean_b[abs(diff) <= 0.1]
+    uu=mean_b[(abs(diff) > 0.1)*(mean_b > 10000)]
     if uu.any() == True:
-        fwid=mean_b==max(uu)
+        fwid=np.argwhere(mean_b==min(uu))[0][0]
+        fwid=fwid-1
         fw=mean_b[fwid]
     else:
-        fw=999
+        fw=mean_b[-1]
         fwid=0
     print fw
     pl.plot(mean_b,diff,'bo')
@@ -636,7 +647,7 @@ def linearity_single(NameFits,NameBias,shift=None):
         ymin = ymin + yshift
         ymax = ymax + yshift
     NFile = len(NameFits)
-    num = round((NFile-1)/4.)
+    num = int(round((NFile-1)/4.))
     mean_b = np.zeros(num)
     var_b = np.zeros(num)
     exptime=np.zeros(num)
