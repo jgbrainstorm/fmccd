@@ -20,8 +20,8 @@ for i in Channel:
     print '----- channel: ',i,'-----'
     data,hdr=pf.getdata(NameBias,i,header=True)
     oscanL=np.mean(data[500:1500,10:50])
-    detname=hdr['detser']
-    #detname=hdr['detpos']
+    #detname=hdr['detser']
+    detname=hdr['detpos']
     if oscanL != 0:     
         gainL,fwL=linearity(NameFits,NameBias,i,shift=0,left=1)
         pl.savefig(dir+'fig/ptc_'+detname+'_channel_'+str(i)+'_left.png')

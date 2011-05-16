@@ -8,8 +8,8 @@ import sys
 def getxy(data,title=None):
     #datas=nd.filters.gaussian_filter(data,5)
     datas=data
-    ok=datas>=datas.mean()+datas.std()
-    good=nd.binary_opening(ok,structure=np.ones((30,30)))    
+    ok=datas>=datas.mean()+1.5*datas.std()
+    good=nd.binary_opening(ok,structure=np.ones((60,60)))    
     datagood=datas*good
     structuring_element=np.ones((3,3))
     segmentation,segments=nd.label(good,structure=structuring_element)    
@@ -34,13 +34,13 @@ else:
     data2=pf.getdata(sys.argv[2],int(sys.argv[3]))
     x2,y2=getxy(data2,sys.argv[2]+'['+sys.argv[3]+']')
     pl.subplot(2,2,3)
-    pl.plot(x1,x1-x2,'bo')
+    pl.plot(x1,x2-x1,'bo')
     pl.xlabel('x1')
-    pl.ylabel('x1-x2')
+    pl.ylabel('x2-x1')
     pl.subplot(2,2,4)
-    pl.plot(y1,y1-y2,'bo')
+    pl.plot(y1,y2-y1,'bo')
     pl.xlabel('y1')
-    pl.ylabel('y1-y2')
+    pl.ylabel('y2-y1')
     sep=np.sqrt((x1-x2)**2+(y1-y2)**2)
     print hdr1['detpos']+': '+str(np.round(sep,3))
     pl.show()

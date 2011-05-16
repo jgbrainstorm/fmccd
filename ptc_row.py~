@@ -1,0 +1,118 @@
+#! /usr/bin/env python
+import sys
+sys.path.append('/home/jghao/fmccd')
+from fermiMCCD import *
+
+
+def linearity(NameFits,NameBias,Channel,rowshift=None,left=None):
+
+    if left == 1:
+        colmin=300
+        colmax=800
+    else:
+        colmin=1300
+        colmax=1800
+    rowmin=100+rowshift
+    rowmax=200+rowshift
+    #detector = pf.open(NameBias)[Channel].header['DETSER']
+    detector = pf.open(NameBias)[Channel].header['DETPOS']
+    if detector[-1]=='N':
+        rowmin=3946-rowshift
+        rowmax=4046-rowshift
+    if detector[0]=='F':
+        rowmin=100+rowshift
+        rowmax=200+rowshift
+    NFile = len(NameFits)
+    num = round((NFile-1)/2.)
+    mean_b = np.zeros(num)
+    var_b = np.zeros(num)
+    exptime=np.zeros(num)
+    for i in range(0,num):
+        bias,biashdr = readCCDFits(NameBias,Channel)
+        bias = bias[rowmin:rowmax,colmin:colmax]
+        ba,hdra = readCCDFits(NameFits[i*2],Channel)
+        ba = ba[rowmin:rowmax,colmin:colmax]
+        ba = ba - bias
+        bb,hdrb = readCCDFits(NameFits[i*2+1],Channel)
+        bb = bb[rowmin:rowmax,colmin:colmax]
+        bb = bb - bias
+        uni = np.unique(ba)
+        add_b = ba + bb
+        diff_b= ba - bb
+        mean_b[i] = robust_mean(add_b)/2.
+        var_b[i] = robust_var(diff_b)/2.
+        exptime[i]=pf.open(NameFits[i*2])[0].header['expreq']        
+        #exptime[i]=0
+        ok = (mean_b > 0)*(mean_b <20000)*(var_b < 8000)          
+        if len(mean_b[ok]) > 2:
+            (a,b,SEa,SEb,R2) = linefit(mean_b[ok],var_b[ok])
+            gain = b
+            (ta,tb,tSEa,tSEb,tR2) = linefit(exptime[ok],mean_b[ok])           
+        else:
+            gain=999
+            a=0
+            b=0
+            SEb=999
+            ta=0
+            tb=0
+            tSEa=999
+            tSEb=999
+    dff=(mean_b-(tb*exptime+ta))/(tb*exptime+ta)
+    uuu=mean_b[(abs(dff) > 0.01)*(mean_b > 10000.)]
+    if uuu.any() == True:
+        ffwid=np.argwhere(mean_b==min(uuu))
+        ffwid=ffwid-1
+        ffw=mean_b[ffwid]
+    else:
+        ffw=999
+        ffwid=0
+    diff=(var_b-(b*mean_b+a))/(b*mean_b+a)
+    uu=mean_b[(abs(diff) > 0.1)*(mean_b > 10000)]
+    if uu.any() == True:
+        fwid=np.argwhere(mean_b==min(uu))
+        fwid=fwid-1
+        fw=mean_b[fwid]
+    else:
+        fw=999
+        fwid=0
+    return gain,fw
+
+
+
+dir=os.getcwd()+'/'
+
+NameFits=gl.glob(dir+'/*.fits*')
+NameBias=dir+'/bias/median.fits'
+NameFits.sort()
+
+hdu=pf.open(NameBias)
+Channel=sys.argv[1]
+left=sys.argv[2]
+rowshift=np.arange(0,3500,200)
+
+fullwell=[]
+gain=[]
+
+for i in rowshift:
+    g,fw=linearity(NameFits,NameBias,Channel,i,left=left):
+    gain.append(g)
+    fullwell.append(fw)
+    
+fullwell=np.array(fullwell)
+gain=np.array(gain)
+hdr=pf.getheader(NameBias,Channel)
+detname=hdr['detpos']
+
+pl.plot(rowshift,fullwell,'bo')
+pl.xlabel('row position')
+pl.ylabel('full well capacity')
+
+if left==1:
+    pl.title(detname+': left')
+else:
+    pl.title(detname+': right')
+
+pl.show()
+    
+    
+
