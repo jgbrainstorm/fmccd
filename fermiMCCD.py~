@@ -252,7 +252,9 @@ def mode_gauss(x,binsize=None,range=None,crit_f=None):
     xok=(x>bin_edge[ok.min()])*(x<=bin_edge[ok.max()+1])
     mean=robust_mean(x[xok])
     stdm=robust_std(x[xok])/np.sqrt(len(xok))
-    ks,p = kstest(x[xok],'norm')
+    #ks,p = kstest(x[xok],'norm')
+    ks=0
+    p=0
     return mean,stdm,ks,p
 
 #-----scale CCD image to int16-------
@@ -524,7 +526,7 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         colmin = colmin + colshift
         colmax = colmax + colshift
     NFile = len(NameFits)
-    num = round((NFile-1)/2.)
+    num = int(round((NFile-1)/2.))
     mean_b = np.zeros(num)
     var_b = np.zeros(num)
     exptime=np.zeros(num)
@@ -617,7 +619,7 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         fw=mean_b[fwid]
     else:
         fw=mean_b[-1]
-        fwid=0
+        fwid=-1
     print fw
     pl.plot(mean_b,diff,'bo')
     pl.plot(fw,diff[fwid],'ro')
@@ -647,7 +649,7 @@ def linearity_single(NameFits,NameBias,shift=None):
         ymin = ymin + yshift
         ymax = ymax + yshift
     NFile = len(NameFits)
-    num = round((NFile-1)/4.)
+    num = int(round((NFile-1)/4.))
     mean_b = np.zeros(num)
     var_b = np.zeros(num)
     exptime=np.zeros(num)
@@ -1127,6 +1129,19 @@ def slice_fits(hdu=None,exten=None,output=None):
     newhdu.writeto(output)
     return 0
 
+def extract_extension(filename,ext):
+    """
+    this is the latest one 6/18/11
+    """
+    data=pf.getdata(filename,ext)
+    header=pf.getheader(filename,ext)
+    header.update('exten',ext,'extension of the image')
+    output=filename[0:-5]+'_exten_'+ext+'.fits'
+    hdu=pf.PrimaryHDU(data,header)
+    hdu.writeto(output)
+    return(0)
+
+
 
 
 def dist(x):
@@ -1375,7 +1390,7 @@ def ccd_match_offset_bak(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb
 
 
 
-def ccd_match_offset(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None,xadd=None,yadd=None,crit_f=None):
+def ccd_match_offset(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=None,inb=None,xadd=0,yadd=0,crit_f=None):
     if crit_f == None:
         crit_f=0.
     dxa=dist(xa[ina])
@@ -1390,14 +1405,16 @@ def ccd_match_offset(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=Non
     ax=fig.add_subplot(2,2,1)
     pl.plot(xa,ya,'bo')
     if len(inb) > 1:
-        pl.plot(xb[inb]-xoffset-xadd,yb[inb]-yoffset-yadd,'r.')
+        xoffset=xoffset+xadd
+        yoffset=yoffset+yadd
+        pl.plot(xb[inb]-xoffset,yb[inb]-yoffset,'r.')
     pl.xlim(min(xa)-200,max(xa)+200)
     pl.ylim(min(ya)-200,max(ya)+200)
     pl.xlabel('x (pixels)')
     pl.xlabel('y (pixels)')
     pl.title(CCD1+': red dot is cross-matched')
     ax=fig.add_subplot(2,2,2)
-    pl.plot(xb-xoffset-xadd,yb-yoffset-yadd,'bo')
+    pl.plot(xb-xoffset,yb-yoffset,'bo')
     if len(ina) > 1:
         pl.plot(xa[ina],ya[ina],'r.')
     pl.xlim(min(xa)-200,max(xa)+200)
@@ -1406,7 +1423,7 @@ def ccd_match_offset(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=None,yb=Non
     pl.xlabel('y (pixels)')
     pl.title(CCD2+': red dot is cross-matched')
     ax=fig.add_subplot(2,2,3)
-    large=(dla > 300)*(dlb > 300)
+    large=(dla > 300)*(dlb > 300)*(dla<2000)*(dlb<2000)
     ltan=ltan[large]*200000/15.
     lpeak=pl.hist(ltan,bins=1000)
     lpeak=max(lpeak[0])
@@ -1521,12 +1538,7 @@ def ccd_match_offset_for_tilt(CCD1=None,xa=None,ya=None,ina=None,CCD2=None,xb=No
     return mean_ltan,stdm_ltan
 
 
-
-
-
-
-
-
+"""
 def ccd2file(CCD):
     if CCD=='s1':
         fileNo=0
@@ -1565,6 +1577,45 @@ def ccd2file(CCD):
     if CCD=='s13':
         fileNo=17
     return fileNo
+"""
+
+
+def ccd2file(CCD):
+    """
+    left side
+    """
+    if CCD=='n10':
+        fileNo=0
+    if CCD=='n4':
+        fileNo=1
+    if CCD=='s4':
+        fileNo=2
+    if CCD=='s10':
+        fileNo=3
+    if CCD=='s9':
+        fileNo=4
+    if CCD=='s3':
+        fileNo=5
+    if CCD=='n3':
+        fileNo=6
+    if CCD=='n9':
+        fileNo=7
+    if CCD=='n2':
+        fileNo=8
+    if CCD=='s2':
+        fileNo=9
+    if CCD=='s8':
+        fileNo=10
+    if CCD=='s1':
+        fileNo=11
+    if CCD=='n1':
+        fileNo=12
+    if CCD=='n8':
+        fileNo=13
+    return fileNo
+
+
+
 
 
 def ccd_flux_threshold(cat=None,CCD=None,fluxth=None):
@@ -1614,10 +1665,10 @@ def ccd_match_check(cat=None,CCD1=None,CCD2=None):
     b1=pf.getdata(cat[ccd2file(CCD2)])
     f0=b0.field('FLUX_BEST')
     f1=b1.field('FLUX_BEST')
-    #ok0=f0>np.mean(f0)
-    #ok1=f1>np.mean(f1)
-    ok0=f0>120000
-    ok1=f1>120000
+    ok0=f0>np.mean(f0)
+    ok1=f1>np.mean(f1)
+    #ok0=f0>120000
+    #ok1=f1>120000
     
     ra0=b0.field('X_WORLD')[ok0]
     dec0=b0.field('Y_WORLD')[ok0]
