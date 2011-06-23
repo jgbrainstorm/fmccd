@@ -1581,9 +1581,8 @@ def ccd2file(CCD):
 
 
 def ccd2file(CCD):
-    """
-    left side
-    """
+    #right side
+    
     if CCD=='n10':
         fileNo=0
     if CCD=='n4':
@@ -1615,6 +1614,40 @@ def ccd2file(CCD):
     return fileNo
 
 
+"""
+def ccd2file(CCD):
+    #left side
+    if CCD=='n11':
+        fileNo=0
+    if CCD=='n4':
+        fileNo=1
+    if CCD=='s4':
+        fileNo=2
+    if CCD=='s11':
+        fileNo=3
+    if CCD=='s12':
+        fileNo=4
+    if CCD=='s5':
+        fileNo=5
+    if CCD=='n5':
+        fileNo=6
+    if CCD=='n12':
+        fileNo=7
+    if CCD=='n6':
+        fileNo=8
+    if CCD=='s6':
+        fileNo=9
+    if CCD=='s13':
+        fileNo=10
+    if CCD=='s7':
+        fileNo=11
+    if CCD=='n7':
+        fileNo=12
+    if CCD=='n13':
+        fileNo=13
+    return fileNo
+
+"""
 
 
 
@@ -1639,10 +1672,10 @@ def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None
     f0=b0.field('FLUX_BEST')
     f1=b1.field('FLUX_BEST')
 
-    #ok0=f0>np.mean(f0)
-    #ok1=f1>np.mean(f1)
-    ok0=f0>120000
-    ok1=f1>120000
+    ok0=f0>np.mean(f0)
+    ok1=f1>np.mean(f1)
+    #ok0=f0>120000
+    #ok1=f1>120000
     
     ra0=b0.field('X_WORLD')[ok0]
     dec0=b0.field('Y_WORLD')[ok0]

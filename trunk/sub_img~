@@ -5,5 +5,5 @@ if len(sys.argv) == 1:
     print 'syntax: sub_img imagefile biasfile targetfile'
 else:
     from fermiMCCD import *
-    t=Img_sub(sys.argv[1],sys.argv[2])
+    t=Img_sub(imageName=sys.argv[1],biasName=sys.argv[2],subName=sys.argv[3])
 
