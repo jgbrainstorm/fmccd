@@ -341,24 +341,12 @@ def readCCDFits(NameFits,Channel):
 
 #------substract two images, normal used for bias substraction---------
 
-def Img_subtraction(imageHDU=None,biasHDU=None,subName=None):
-    NChannel = len(imageHDU)
-    for i in range(1,NChannel):
-        imageHDU[i].data = imageHDU[i].data - biasHDU[i].data
-   # HDU = scaleHDU(medianHDU) """ scale the image"""
-    HDU = imageHDU
-    if subName != None:
-        HDU.writeto(subName)
-    
-    return(HDU)
-
 
 def Img_sub(imageName=None,biasName=None,subName=None):
     if subName:
         imageHDU=pf.open(imageName)
         imageHDU.verify('silentfix')
-        NChannel=len(imageHDU)
-        for i in range(1,NChannel):
+        for i in extidx:
             imageHDU[i].data=pf.getdata(imageName,i)-pf.getdata(biasName,i)
         imageHDU=scaleHDU(imageHDU)
         imageHDU.writeto(subName)
@@ -366,7 +354,7 @@ def Img_sub(imageName=None,biasName=None,subName=None):
         imageHDU=pf.open(imageName,mode='update')
         imageHDU.verify('silentfix')
         NChannel = len(imageHDU)
-        for i in range(1,NChannel):
+        for i in extidx:
             imageHDU[i].data=pf.getdata(imageName,i)-pf.getdata(biasName,i)
         imageHDU=scaleHDU(imageHDU)
         imageHDU.flush()    
@@ -488,31 +476,19 @@ def image_reduction(dir=None,biasName=None):
 def linearity(NameFits,NameBias,Channel,shift=None,left=None):
 
     if left == None or left == 1:
-        #colmin=150
-        #colmax=350
         colmin=300
         colmax=800
-        #rowmin=200 #lower
-        #rowmax=500
-        #xmin=2000 #middle
-        #xmax=2500    
-        #xmin=3600 #upper
-        #xmax=4000
         rowmin=100  #new region
         rowmax=200
     else:
-        #colmin=1300
-        #colmax=1750
         colmin=1300
         colmax=1800
-        #rowmin=200
-        #rowmax=500
         rowmin=100
         rowmax=200
-    #the following change is due to the bad part on the new CCD mounted 4/15/2010.
     #detector = pf.open(NameBias)[Channel].header['DETSER']
     detector = pf.open(NameBias)[Channel].header['DETPOS']
-    if detector[-1]=='N':
+    if detector[-1]=='N': 
+    #if detector[-1]=='S':this is only true for the ones after invert for flatness measurement on 6/11/2011
         rowmin=3946
         rowmax=4046
     if detector[0]=='F':
