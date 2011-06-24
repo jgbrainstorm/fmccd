@@ -487,8 +487,8 @@ def linearity(NameFits,NameBias,Channel,shift=None,left=None):
         rowmax=200
     #detector = pf.open(NameBias)[Channel].header['DETSER']
     detector = pf.open(NameBias)[Channel].header['DETPOS']
-    if detector[-1]=='N': 
-    #if detector[-1]=='S':this is only true for the ones after invert for flatness measurement on 6/11/2011
+    #if detector[-1]=='N': 
+    if detector[-1]=='S':    #this is only true for the ones after invert for flatness measurement on 6/11/2011
         rowmin=3946
         rowmax=4046
     if detector[0]=='F':
@@ -1640,10 +1640,12 @@ def ccd_flux_threshold(cat=None,CCD=None,fluxth=None):
     pl.plot(x0,y0,'bo')
 
 
-def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None):
-    
-    b0=pf.getdata(cat[ccd2file(CCD1)])
-    b1=pf.getdata(cat[ccd2file(CCD2)])
+def offset(CCD1=None,CCD2=None,cat=None,xadd=None,yadd=None,sep=None,crit_f=None,ccd2fileNo=None):
+    """
+    given two ccd and corresponding catalog name, return the offset.
+    """
+    b0=pf.getdata(cat[ccd2fileNo[CCD1]])
+    b1=pf.getdata(cat[ccd2fileNo[CCD2]])
 
     f0=b0.field('FLUX_BEST')
     f1=b1.field('FLUX_BEST')
