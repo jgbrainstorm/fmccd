@@ -12,10 +12,10 @@ else:
     import numpy as np
     import pylab as pl
     import pyfits as pf
-    b=pf.getdata(sys.argv[1],int(sys.argv[2]))
-    hdr=pf.getheader(sys.argv[1],int(sys.argv[2]))
-    moscanL=np.mean(b[1500:2000,10:50])
-    mimgL=np.mean(b[1500:2000,400:440])
+    b=pf.getdata(sys.argv[1],sys.argv[2])
+    hdr=pf.getheader(sys.argv[1],sys.argv[2])
+    moscanL=np.median(b[1500:2000,10:50])
+    mimgL=np.median(b[1500:2000,400:440])
     #bins=np.unique(np.append(b[1500:2000,10:50],b[1500:2000,400:440]))
     bins=np.arange(moscanL-20,mimgL+20,1)
     fig=pl.figure(figsize=(15,8))
@@ -30,8 +30,8 @@ else:
     pl.title(hdr['detpos']+' Left: Dark'+' Extension: '+sys.argv[2])
     print '----- Left dark is: '+str(np.round(mimgL-moscanL,4))+' -----'
     ax=fig.add_subplot(1,2,2)
-    moscanR=np.mean(b[1500:2000,2110:2150])
-    mimgR=np.mean(b[1500:2000,1400:1440])
+    moscanR=np.median(b[1500:2000,2110:2150])
+    mimgR=np.median(b[1500:2000,1400:1440])
     #bins=np.unique(np.append(b[1500:2000,2110:2150],b[1500:2000,1400:1440]))
     bins=np.arange(moscanR-20,mimgR+20,1)
     pl.hist(b[1500:2000,2110:2150].flatten(),bins=bins,facecolor='green',normed=True)
