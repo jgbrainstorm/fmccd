@@ -12,8 +12,8 @@ else:
     import numpy as np
     import pylab as pl
     import pyfits as pf
-    b=pf.getdata(sys.argv[1],int(sys.argv[2]))
-    hdr=pf.getheader(sys.argv[1],int(sys.argv[2]))
+    b=pf.getdata(sys.argv[1],sys.argv[2])
+    hdr=pf.getheader(sys.argv[1],sys.argv[2])
     noiseL=np.std(b[100:4000,10:50])
     bins=np.unique(b[100:4000,10:50])
     fig=pl.figure(figsize=(15,8))
