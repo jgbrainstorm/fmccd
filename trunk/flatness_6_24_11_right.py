@@ -130,8 +130,8 @@ l1,lerr1=offset(CCD1='n8',CCD2='n4',cat=cat,xadd=50,yadd=-100,sep=70,crit_f=0,cc
 
 
 #--------plot everything-------------
-ext=np.array(['i10n','i4n','i4s','i10s','i9s','i3s','i3n','i9n','i2n','i2s','i8s','i1s','i1n','i8n'])
 
+ext=['i22s','i21s','i20s','i14s','i15s','i16s','i10s','i9s','i8s','i1s','i2s','i3s','i4s','i4n','i3n','i2n','i1n','i8n','i9n','i10n','i16n','i15n','i14n','i20n','i21n','i22n']
 pl.plot(0,0,'ro')
 tmp=pf.open(baseDir+'bias/bias.fits')
 
