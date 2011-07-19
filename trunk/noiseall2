@@ -1,0 +1,45 @@
+#! /usr/bin/env python
+"""
+standalone code to calculate the noise for all extensions of the ccds images from imager. the ccd file needs to be the standard DES ccd fits image with the convention of 1 extension corresponding to 2k x 4k with overscans on the sides.
+Created by: Jiangang Hao @ Fermilab, 9/4/2010 
+"""
+
+import sys
+sys.path.append('/home/jghao/fmccd')
+if len(sys.argv) == 1:
+    print 'syntax: noiseall imageName1 imageName2'
+else:
+    from fermiMCCD import *
+    hdu=pf.open(sys.argv[1])
+    hdu2=pf.open(sys.argv[2])
+    nn=len(hdu)
+    for i in range(1,nn):
+	hdu[i].data = hdu[i].data - hdu2[i].data
+    ccd=[]
+    noise=[]
+    for i in range(1,nn):
+        col0=hdu[i].header['biasseca'].split('[')[1].split(']')[0].split(',')[0].split(':')[0]
+        col1=hdu[i].header['biasseca'].split('[')[1].split(']')[0].split(',')[0].split(':')[1]
+        row0=hdu[i].header['biasseca'].split('[')[1].split(']')[0].split(',')[1].split(':')[0]
+        row1=hdu[i].header['biasseca'].split('[')[1].split(']')[0].split(',')[1].split(':')[1]
+        oscanA=hdu[i].data[int(row0)-1:int(row1),int(col0)-1:int(col1)]
+        ccd.append(hdu[i].header['detpos']+'_L')
+        noiseL=np.std(oscanA[100:4000,:])/np.sqrt(2.)
+        noise.append(noiseL)
+        col0=hdu[i].header['biassecb'].split('[')[1].split(']')[0].split(',')[0].split(':')[0]
+        col1=hdu[i].header['biassecb'].split('[')[1].split(']')[0].split(',')[0].split(':')[1]
+        row0=hdu[i].header['biassecb'].split('[')[1].split(']')[0].split(',')[1].split(':')[0]
+        row1=hdu[i].header['biassecb'].split('[')[1].split(']')[0].split(',')[1].split(':')[1]
+        oscanB=hdu[i].data[int(row0)-1:int(row1),int(col0)-1:int(col1)
+        ccd.append(hdu[i].header['detpos']+'_R')
+        noiseR=np.std(oscanB[100:4000,:])/np.sqrt(2.)
+        noise.append(noiseR)
+    noise=np.array(noise)
+    f = open('noise.txt', 'w')
+    for j in range(len(ccd)):
+        f.write(ccd[j]+'   '+str(round(noise[j],4))+'\n')
+    f.close()
+        
+    print '---- noise analysis complete ----'
+
+    
