@@ -1,0 +1,53 @@
+#! /usr/bin/env python
+
+"""
+standalone code to calculate the noise for individual extension of the ccds images from imager. the ccd file needs to be the standard DES ccd fits image with the convention of 1 extension corresponding to 2k x 4k with overscans on the sides.
+Created by: Jiangang Hao @ Fermilab, 9/4/2010 
+"""
+
+import sys
+sys.path.append('/home/jghao/fmccd')
+if len(sys.argv) == 1:
+    print 'syntax: noise imageName1 imageName2 extension'
+else:
+    from fermiMCCD import *
+    i=sys.argv[3]
+    hdu=pf.getdata(sys.argv[1],i)
+    hdu2=pf.getdata(sys.argv[2],i)
+    hdr=pf.getheader(sys.argv[1],i)
+    hdu=hdu-hdu2
+    col0=hdr['biasseca'].split('[')[1].split(']')[0].split(',')[0].split(':')[0]
+    col1=hdr['biasseca'].split('[')[1].split(']')[0].split(',')[0].split(':')[1]
+    row0=hdr['biasseca'].split('[')[1].split(']')[0].split(',')[1].split(':')[0]
+    row1=hdr['biasseca'].split('[')[1].split(']')[0].split(',')[1].split(':')[1]
+    oscanA=hdu[int(row0)-1:int(row1),int(col0)-1:int(col1)]
+    bins=np.unique(oscanA[100:4000,:])
+    noiseL=np.std(oscanA[100:4000,:])/np.sqrt(2.)
+    fig=pl.figure(figsize=(15,7))
+    ax=fig.add_subplot(1,2,1)
+    pl.hist(oscanA[100:4000,:].flatten(),bins=bins,facecolor='green',normed=True)
+    pl.ylim(0,0.3)
+    pl.xlabel('Counts (ADU)')
+    pl.text(0.1,0.8,'noise: '+str(np.round(noiseL,4))+'(ADU)',transform = ax.transAxes)
+    pl.text(0.1,0.85,'Left Amp of ext: '+sys.argv[3],transform = ax.transAxes)
+    pl.title(hdr['detpos']+' Left: Noise')
+    print '----- Left noise is: '+str(noiseL)+' -----'
+    
+    ax=fig.add_subplot(1,2,2)
+    col0=hdr['biassecb'].split('[')[1].split(']')[0].split(',')[0].split(':')[0]
+    col1=hdr['biassecb'].split('[')[1].split(']')[0].split(',')[0].split(':')[1]
+    row0=hdr['biassecb'].split('[')[1].split(']')[0].split(',')[1].split(':')[0]
+    row1=hdr['biassecb'].split('[')[1].split(']')[0].split(',')[1].split(':')[1]
+    oscanB=hdu[int(row0)-1:int(row1),int(col0)-1:int(col1)]
+    bins=np.unique(oscanB[100:4000,:])
+    noiseR=np.std(oscanB[100:4000,:])/np.sqrt(2.)
+    pl.hist(oscanB[100:4000,:].flatten(),bins=bins,facecolor='blue',normed=True)
+    pl.ylim(0,0.3)
+    pl.xlabel('Counts (ADU)')
+    pl.text(0.2,0.8,'noise: '+str(np.round(noiseR,4))+'(ADU)',transform = ax.transAxes)
+    pl.text(0.2,0.85,'Right Amp of ext: '+sys.argv[3],transform = ax.transAxes)
+    pl.title(hdr['detpos']+' Right: Noise')
+    print '----- Right noise is: '+str(noiseR)+' -----'
+   
+    pl.show()
+    
