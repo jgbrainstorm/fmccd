@@ -1,0 +1,1 @@
+Large mosaic multi CCD camera is crucial for modern astronomical survey. Here are the codes I developed to analyze the CCD images from the Dark Energy Survey Camera at Fermilab. Please refer to the wiki for more details about the package.
